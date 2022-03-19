@@ -2,15 +2,31 @@
 
 Projet Dev. Mutli-platforme
 
-## Getting Started
+## 18 Mars : Setup projet avec firebase
 
-This project is a starting point for a Flutter application.
+flutter pub add firebase_core
+# Install the CLI if not already done so
+dart pub global activate flutterfire_cli
+# Run the `configure` command, select a Firebase project and platforms
+flutterfire configure
+# Ajout BD FireStore
+flutter pub add cloud_firestore
+# Au niveau du code : 
+Read / Update en temps réel d'une bdd cloud firestore
 
-A few resources to get you started if this is your first Flutter project:
+Vérifier que la version courante (java -version) de JAVA_HOME est set sur le jdk 11 ( au plus ), sinon modifier le path (  /usr/libexec/java_home -V / export JAVA_HOME="...")
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
+## TODO 
+[] Config authentification pour passer la bd en prod
+Ajout règles d'éditions à la bd
+Google Sign In / Apple Sign In --> suivre guide FlutterFire UI
+test push notif
+Mettre en place l'architecture principale du projet
+Analytics 
+Remote Config : mettre à jour l'app sans devoir re dl 
+Dynamic links : ouvrir l'app depuis un navigateur
+Upload d'images
 
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+
+
+
