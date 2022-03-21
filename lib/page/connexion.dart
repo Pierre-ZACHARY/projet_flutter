@@ -15,13 +15,35 @@ class _ConnexionPageState extends State<ConnexionPage> {
       appBar: AppBar(
         title: const Text('First Route'),
       ),
-      body: Center(
-        child: ElevatedButton(
-          child: const Text('Open route'),
-          onPressed: () {
-            // Navigate to second route when tapped.
-          },
-        ),
+      body: Stack(
+        children: <Widget>[
+          Container(
+            height: double.infinity,
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF0079FF),
+                  Color(0xFF090979),
+                ],
+                stops: [0, 1],
+              )
+            ),
+          ),
+          Container(
+            height: double.infinity,
+            child: const SingleChildScrollView(
+              physics: AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.symmetric(
+                horizontal: 40.0,
+                vertical: 120.0,
+              ),
+            ),
+          )
+
+        ],
       ),
     );
   }
