@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class ConnexionPage extends StatefulWidget {
-  const ConnexionPage({Key? key, required this.title}) : super(key: key);
+  const ConnexionPage(BuildContext context, {Key? key, required this.title}) : super(key: key);
   final String title;
   @override
   State<ConnexionPage> createState() => _ConnexionPageState();

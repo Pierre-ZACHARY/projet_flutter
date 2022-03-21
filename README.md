@@ -14,7 +14,7 @@ flutter pub add cloud_firestore
 # Au niveau du code : 
 Read / Update en temps réel d'une bdd cloud firestore
 
-Vérifier que la version courante (java -version) de JAVA_HOME est set sur le jdk 11 ( au plus ), sinon modifier le path (  /usr/libexec/java_home -V / export JAVA_HOME="...")
+Vérifier que la version courante (java -version) de JAVA_HOME est set sur le jdk 11 ( au plus ), sinon modifier le path ( export JAVA_HOME=`/usr/libexec/java_home -v 11`)
 
 ## TODO 
 [] Config authentification pour passer la bd en prod

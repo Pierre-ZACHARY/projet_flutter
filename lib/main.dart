@@ -1,38 +1,54 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:projet_flutter/page/home.dart';
 import 'page/connexion.dart';
 import 'firebase_options.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+
+final firebaseAuthProvider = Provider<FirebaseAuth>((ref) => FirebaseAuth.instance);
+final authStateChangesProvider = StreamProvider.autoDispose<User?>((ref) => ref.watch(firebaseAuthProvider).userChanges());
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const MyApp());
+  runApp(const ProviderScope(
+    child: MaterialApp(home: MyApp())
+  ));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({Key? key}) : super(key: key);
 
-  // This widget is the root of your application.
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authStateChanges = ref.watch(authStateChangesProvider);
+    // sert à changer automatiquement de page quand utilisateur connecté ou non
+    return authStateChanges.when(
+      data: (user) => _data(context, user),
+      loading: () =>
+      const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
       ),
-      home: const ConnexionPage(title: 'Flutter Demo Home Page'),
+      error: (_, __) =>
+      const Scaffold(
+        body: Text('Something went wrong'),
+      ),
     );
+  }
+
+  Widget _data(BuildContext context, User? user) {
+    if (user != null) {
+      // si utilisateur co
+      return MyHomePage(context, user, title: "Home Page");
+    }
+    // sinon
+    return ConnexionPage(context, title: 'Connexion');
   }
 }

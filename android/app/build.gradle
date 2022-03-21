@@ -32,8 +32,8 @@ android {
     compileSdkVersion 31
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
 
     defaultConfig {
@@ -42,6 +42,7 @@ android {
         //minSdkVersion flutter.minSdkVersion
         minSdkVersion 19
         targetSdkVersion flutter.targetSdkVersion
+        multiDexEnabled true
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
@@ -54,10 +55,10 @@ android {
             signingConfig signingConfigs.debug
         }
     }
-
-    lintOptions {
+    lint {
         abortOnError false
     }
+
 }
 
 flutter {
@@ -65,6 +66,8 @@ flutter {
 }
 
 dependencies {
+    implementation 'com.android.support:multidex:1.0.3'
+
     // Import the Firebase BoM
     implementation platform('com.google.firebase:firebase-bom:29.2.0')
 
