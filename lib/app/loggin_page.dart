@@ -14,6 +14,11 @@ class ConnexionPage extends StatefulWidget {
 class _ConnexionPageState extends State<ConnexionPage> {
 
   bool rememberMe = false;
+  String email = "", password = "";
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+
+
   Future<void> Login(String email, String password) async {
     AuthUtils.Login(email, password);
   }
@@ -21,7 +26,6 @@ class _ConnexionPageState extends State<ConnexionPage> {
   Future<void> Register(String email, String password) async {
     AuthUtils.Register(email, password);
   }
-
 
   Column makeEmailEntry(){
     return Column(
@@ -36,12 +40,13 @@ class _ConnexionPageState extends State<ConnexionPage> {
           alignment: Alignment.centerLeft,
           decoration: kBoxDecorationStyle,
           height: 60.0,
-          child: const TextField(
+          child: TextField(
+            controller: emailController,
             keyboardType: TextInputType.emailAddress,
-            style: TextStyle(
+            style: const TextStyle(
                 color: Colors.white,
                 fontFamily: "OpenSans"),
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               border: InputBorder.none,
               contentPadding: EdgeInsets.only(top: 14.0),
               prefixIcon: Icon(
@@ -70,12 +75,13 @@ class _ConnexionPageState extends State<ConnexionPage> {
           alignment: Alignment.centerLeft,
           decoration: kBoxDecorationStyle,
           height: 60.0,
-          child: const TextField(
+          child: TextField(
+            controller: passwordController,
             obscureText: true,
-            style: TextStyle(
+            style: const TextStyle(
                 color: Colors.white,
                 fontFamily: "OpenSans"),
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               border: InputBorder.none,
               contentPadding: EdgeInsets.only(top: 14.0),
               prefixIcon: Icon(
@@ -104,32 +110,41 @@ class _ConnexionPageState extends State<ConnexionPage> {
     );
   }
 
-  Container makeLogInButton(){
-    return Container(
-        padding: const EdgeInsets.symmetric(vertical: 25.0),
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: () => print("Do nothing"),
-          style: ButtonStyle(
-            backgroundColor: MaterialStateProperty.all<Color>(Colors.white),
-            padding:  MaterialStateProperty.all<EdgeInsetsGeometry>(const EdgeInsets.all(15.0)),
-            shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-              RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30.0),
-              ),
-            ),
+  Checkbox makeRememberCheckBox(){
+    return Checkbox(
+      value: rememberMe,
+      checkColor: Colors.green,
+      activeColor: Colors.white,
+      onChanged: (value) {
+        setState(() {
+          rememberMe = value!;
+        });
+      },
+    );
+  }
+
+  ElevatedButton makeLogInButton(){
+    return ElevatedButton(
+      onPressed: () => Login(emailController.text, passwordController.text),
+      style: ButtonStyle(
+        backgroundColor: MaterialStateProperty.all<Color>(Colors.white),
+        padding:  MaterialStateProperty.all<EdgeInsetsGeometry>(const EdgeInsets.all(15.0)),
+        shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30.0),
           ),
-          child: const Text(
-            "Log in",
-            style: TextStyle(
-                color: Color(0xFF154da4),
-                letterSpacing: 2.0,
-                fontSize: 18.0,
-                fontWeight: FontWeight.bold,
-                fontFamily: "OpenSans"
-            ),
-          ),
-        )
+        ),
+      ),
+      child: const Text(
+        "Log in",
+        style: TextStyle(
+            color: Color(0xFF154da4),
+            letterSpacing: 2.0,
+            fontSize: 18.0,
+            fontWeight: FontWeight.bold,
+            fontFamily: "OpenSans"
+        ),
+      ),
     );
   }
 
@@ -174,37 +189,11 @@ class _ConnexionPageState extends State<ConnexionPage> {
       ),
     );
   }
-
-  Row makeRememberMeRow(){
-    return Row(
-      children: <Widget>[
-        Theme(
-          data: ThemeData(unselectedWidgetColor: Colors.white),
-          child: Checkbox(
-            value: rememberMe,
-            checkColor: Colors.green,
-            activeColor: Colors.white,
-            onChanged: (value) {
-              setState(() {
-                rememberMe = value!;
-              });
-            },
-          ),
-        ),
-        const Text(
-          "Remember me",
-          style: kLabelStyle,
-        ),
-      ],
-    );
-  }
   @override
   Widget build(BuildContext context) {
-    Login("pierre.zachary45@gmail.com", "password");
+    // Login("pierre.zachary45@gmail.com", "password");
+    emailController.text = "";
     return Scaffold(
-      // appBar: AppBar(
-      //   title: const Text('First Route'),
-      // ),
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light,
         child: GestureDetector(
@@ -215,61 +204,76 @@ class _ConnexionPageState extends State<ConnexionPage> {
                 height: double.infinity,
                 width: double.infinity,
                 decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFF1d9586),
-                      Color(0xFF154da4),
-                    ],
-                    stops: [0, 1],
-                  )
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xFF1d9586),
+                        Color(0xFF154da4),
+                      ],
+                      stops: [0, 1],
+                    )
                 ),
               ),
               SizedBox(
                 height: double.infinity,
                 child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40.0,
-                    vertical: 120.0,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      const Text(
-                        "Sign in",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontFamily: "OpenSans",
-                          fontSize: 30.0,
-                          fontWeight: FontWeight.bold,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 40.0,
+                      vertical: 120.0,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        const Text(
+                          "Sign in",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: "OpenSans",
+                            fontSize: 30.0,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 30.0),
-                      makeEmailEntry(),
-                      const SizedBox(height: 30.0),
-                      makePasswordEntry(),
-                      makePasswordForgotButton(),
-                      makeRememberMeRow(),
-                      makeLogInButton(),
-                      makeSignInText(),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 30.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        const SizedBox(height: 30.0),
+                        makeEmailEntry(),
+                        const SizedBox(height: 30.0),
+                        makePasswordEntry(),
+                        makePasswordForgotButton(),
+                        Row(
                           children: <Widget>[
-                            makeSignInWithGoogleButton(),
-                            // A modifier avec logo Apple pour la connexion
-                            makeSignInWithGoogleButton(),
+                            Theme(
+                                data: ThemeData(unselectedWidgetColor: Colors.white),
+                                child: makeRememberCheckBox()
+                            ),
+                            const Text(
+                              "Remember me",
+                              style: kLabelStyle,
+                            ),
                           ],
                         ),
-                      ),
-                      GestureDetector(
-                        onTap: () => print("Sign up tap"),
-                        child: RichText(
-                            text: const TextSpan(
-                                children: [
+                        Container(
+                            padding: const EdgeInsets.symmetric(vertical: 25.0),
+                            width: double.infinity,
+                            child: makeLogInButton()
+                        ),
+                        makeSignInText(),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 30.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: <Widget>[
+                              makeSignInWithGoogleButton(),
+                              // A modifier avec logo Apple pour la connexion
+                              makeSignInWithGoogleButton(),
+                            ],
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => print("Sign up tap"),
+                          child: RichText(
+                              text: const TextSpan(
+                                  children: [
                                     TextSpan(
                                         text: "No account ? ",
                                         style: TextStyle(
@@ -286,12 +290,12 @@ class _ConnexionPageState extends State<ConnexionPage> {
                                           fontWeight: FontWeight.bold,
                                         )
                                     )
-                                ]
-                            )
-                        ),
-                      )
-                    ],
-                  )
+                                  ]
+                              )
+                          ),
+                        )
+                      ],
+                    )
                 ),
               )
 
