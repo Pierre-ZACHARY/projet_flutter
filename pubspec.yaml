@@ -32,6 +32,8 @@ dependencies:
   cloud_firestore:
   firebase_auth:
   flutter_riverpod:
+  firebase_storage:
+  path_provider:
   flutter:
     sdk: flutter
 
