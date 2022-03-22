@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:projet_flutter/modele/UserInfo.dart';
 
 class AuthUtils{
+
 
   static String? currentUserId() => FirebaseAuth.instance.currentUser?.uid;
 
@@ -25,7 +27,8 @@ class AuthUtils{
           email: email,
           password: password
       );
-      FirebaseAuth.instance.currentUser?.updateDisplayName(email.split("@").first);
+      Userinfo userInfo = Userinfo(displayName: email.split("@").first, active: true, uid: userCredential.user!.uid, imgUrl: '', );
+      await userInfo.Update();
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
         throw PasswordTooWeak();

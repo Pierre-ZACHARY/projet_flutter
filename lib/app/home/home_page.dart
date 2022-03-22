@@ -1,14 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:projet_flutter/app/home/chats/chat_page.dart';
 import 'package:projet_flutter/app/home/profile/profile_page.dart';
+import 'package:projet_flutter/utils/cloudStorageUtils.dart';
 import 'package:projet_flutter/utils/constant.dart';
 
 import '/modele/Bandnames.dart';
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage(BuildContext context, User user, {Key? key, required this.title}) : super(key: key){
+  MyHomePage(BuildContext context, User user, {Key? key, required this.title}) : super(key: key) {
     print(user.email);
     print(user.emailVerified);
     print(user.displayName);
@@ -27,10 +29,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   static const List<Widget> _widgetOptions = <Widget>[
     ChatPage(),
-    Text(
-      'Index 1: Business',
-      style: optionStyle,
-    ),
+    ProfilePage("dz")
   ];
 
   void _onItemTapped(int index) {

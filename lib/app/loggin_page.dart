@@ -200,7 +200,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
   }
   @override
   Widget build(BuildContext context) {
-    Login("pierre.zachary45@gmail.com", "password");
+    Register("dazazad45@gmail.com", "password");
     return Scaffold(
       // appBar: AppBar(
       //   title: const Text('First Route'),

@@ -1,13 +1,17 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:projet_flutter/modele/UserInfo.dart';
 
 class CloudStorage{
 
-  static const String profilePicturePath = "/usersProfilePictures/";
+  static const String _profilePicturePath = "/usersProfilePictures/";
+  static String? profilePictureUrl;
 
   static Future<void> uploadFile(File file, String path) async {
+    print(path);
     SettableMetadata metadata = SettableMetadata(cacheControl: 'max-age=60');
     if(FirebaseAuth.instance.currentUser != null) {
       metadata.asMap().addAll({
@@ -34,23 +38,13 @@ class CloudStorage{
     }
   }
 
-  static Future<void> uploadUserProfilePicture(File profilePicture) async{
+  static Future<void> uploadUserProfilePicture(File profilePicture, Userinfo uinfo) async{
     if(FirebaseAuth.instance.currentUser == null){
       throw UserNotLoggedIn();
     }
-    await uploadFile(profilePicture, profilePicturePath+FirebaseAuth.instance.currentUser!.uid+".png");
-  }
-
-
-  static Future<File> currentUserProfilePicture() async{
-    if(FirebaseAuth.instance.currentUser == null){
-      throw UserNotLoggedIn();
-    }
-    Directory appDocDir = await getApplicationDocumentsDirectory();
-    String uid = FirebaseAuth.instance.currentUser!.uid;
-    File res = File('${appDocDir.path}/profile_pictures/$uid.png');
-    await downloadFile(res, profilePicturePath+FirebaseAuth.instance.currentUser!.uid+".png");
-    return res;
+    await uploadFile(profilePicture, _profilePicturePath+FirebaseAuth.instance.currentUser!.uid+".png");
+    String url = await FirebaseStorage.instance.ref(_profilePicturePath+FirebaseAuth.instance.currentUser!.uid+".png").getDownloadURL();
+    await uinfo.updateImgUrl(url);
   }
 }
 
