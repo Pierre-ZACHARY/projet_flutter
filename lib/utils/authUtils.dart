@@ -25,6 +25,7 @@ class AuthUtils{
           email: email,
           password: password
       );
+      FirebaseAuth.instance.currentUser?.updateDisplayName(email.split("@").first);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
         throw PasswordTooWeak();

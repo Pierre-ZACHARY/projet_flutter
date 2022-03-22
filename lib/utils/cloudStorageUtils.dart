@@ -34,7 +34,7 @@ class CloudStorage{
     }
   }
 
-  static uploadUserProfilePicture(File profilePicture) async{
+  static Future<void> uploadUserProfilePicture(File profilePicture) async{
     if(FirebaseAuth.instance.currentUser == null){
       throw UserNotLoggedIn();
     }

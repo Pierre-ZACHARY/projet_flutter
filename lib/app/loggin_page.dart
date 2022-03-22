@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:projet_flutter/utilities/authUtils.dart';
-import 'package:projet_flutter/utilities/constant.dart';
+import 'package:projet_flutter/utils/authUtils.dart';
+import 'package:projet_flutter/utils/constant.dart';
 
 class ConnexionPage extends StatefulWidget {
   const ConnexionPage(BuildContext context, {Key? key, required this.title}) : super(key: key);
