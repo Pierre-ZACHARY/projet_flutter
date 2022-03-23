@@ -35,6 +35,7 @@ dependencies:
   firebase_storage:
   path_provider:
   image_picker:
+  textfield_search:
   flutter:
     sdk: flutter
 

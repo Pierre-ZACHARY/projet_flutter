@@ -94,9 +94,24 @@ class _ProfilePageState extends State<ProfilePage>{
                         Expanded(
                           child: ElevatedButton(
                               style: ButtonStyle(
+                                backgroundColor: MaterialStateProperty.all(ColorConstants.secondary),
+                              ),
+                              //TODO settings pour activer / désativer le mode public, plus tard settings pour activer / désactiver les push notif
+                              onPressed: () {  },
+                              child: Text("Settings", style: TextConstants.defaultSecondary)),
+                        )
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                              style: ButtonStyle(
                                 backgroundColor: MaterialStateProperty.all(ColorConstants.backgroundHighlight),
                               ),
-                              onPressed: ()=> AuthUtils.Logout(),
+                              // TODO Ajouter chargement sur le logout ( synchro avec le longpress )
+                              onLongPress: ()=> AuthUtils.Logout(),
+                              onPressed: () {  },
                               child: Text("Logout", style: TextConstants.defaultPrimary,)),
                         )
                       ],

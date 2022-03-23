@@ -6,8 +6,11 @@ class AuthUtils{
 
   static String? currentUserId() => FirebaseAuth.instance.currentUser?.uid;
 
-  static Future<void> Login(String email, String password) async {
+  static Future<void> Login(String email, String password, {Persistence? persistence}) async {
     try {
+      if(persistence!= null){
+        await FirebaseAuth.instance.setPersistence(persistence);
+      }
       UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: email,
           password: password
@@ -21,8 +24,11 @@ class AuthUtils{
     }
   }
 
-  static Future<void> Register(String email, String password) async {
+  static Future<void> Register(String email, String password, {Persistence? persistence}) async {
     try {
+      if(persistence!= null){
+        await FirebaseAuth.instance.setPersistence(persistence);
+      }
       UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: email,
           password: password

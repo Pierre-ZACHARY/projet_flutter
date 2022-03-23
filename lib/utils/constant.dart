@@ -37,6 +37,7 @@ class ColorConstants{
 class TextConstants{
   static const TextStyle titlePrimary = TextStyle(color: ColorConstants.primary, fontSize: 24);
   static const TextStyle defaultPrimary = TextStyle(color: ColorConstants.primary, fontSize: 16);
+  static const TextStyle defaultSecondary = TextStyle(color: Colors.black, fontSize: 16);
   static const TextStyle hintPrimary = TextStyle(color: ColorConstants.primary, fontSize: 10);
 }
 

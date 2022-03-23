@@ -29,14 +29,16 @@ class Userinfo{
     ).snapshots();
   }
 
-  static Stream<QuerySnapshot<Userinfo>> searchUser(String displayName){
+  static Query<Userinfo> searchUser(String displayName){
     return FirebaseFirestore.instance
         .collection('users')
-        .where('displayName', arrayContains: displayName.split(" "))
+        .where('active', isEqualTo: true)
+        .where('displayName', isGreaterThanOrEqualTo: displayName)
+        .where('displayName', isLessThanOrEqualTo: displayName+ '\uf8ff')
         .withConverter<Userinfo>(
           fromFirestore: (snapshot, _) => Userinfo.fromJson(snapshot.data()!),
           toFirestore: (bandnames, _) => bandnames.toJson(),
-        ).snapshots();
+        );
   }
 
   Future<void> Update() {

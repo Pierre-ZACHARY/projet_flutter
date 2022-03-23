@@ -13,6 +13,9 @@ class ConnexionPage extends StatefulWidget {
 
 class _ConnexionPageState extends State<ConnexionPage> {
 
+  // TODO Ajouter State Register, ajouter Google / apple Sign In, Ajouter retour d'actions ( spinner ou barre de chargement ... ), gérer les erreurs retourner par login /register
+  // voir https://medium.com/flutter-community/make-progress-button-in-flutter-d4e2d27bd1d7 pour le chargement du bouton login par ex
+
   bool rememberMe = false;
   String email = "", password = "";
   final emailController = TextEditingController();
@@ -191,7 +194,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
   }
   @override
   Widget build(BuildContext context) {
-    // Login("pierre.zachary45@gmail.com", "password");
+    Register("pierre.zachary45@gmail.com", "password");
     emailController.text = "";
     return Scaffold(
       body: AnnotatedRegion<SystemUiOverlayStyle>(
