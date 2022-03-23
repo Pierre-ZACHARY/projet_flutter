@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:projet_flutter/modele/Discussion.dart';
+import 'package:projet_flutter/modele/DiscussionsList.dart';
 import 'package:projet_flutter/modele/UserInfo.dart';
 import 'package:projet_flutter/utils/constant.dart';
 import '/modele/Bandnames.dart';
@@ -14,20 +16,25 @@ class ChatPage extends StatefulWidget{
 
 }
 
+class UserinfoWrapper{
+  late String label;
+  late Userinfo value;
+  UserinfoWrapper(Userinfo userinfo){
+    label = userinfo.displayName;
+    value = userinfo;
+  }
+}
+
 class _ChatPageState extends State<ChatPage>{
 
-  Widget _buildListItem(BuildContext context, DocumentSnapshot<Bandnames> bnSnapShot){
-
-    Bandnames bn = bnSnapShot.data()!;
+  Widget _buildListItem(BuildContext context, String discussionId){
     return ListTile(
       title: Row(
         children: [
-          Expanded(child: Text(bn.name, style: TextConstants.defaultPrimary,)),
-          Text(bn.count.toString(), style: TextConstants.defaultPrimary,)
+          Expanded(child: Text(discussionId, style: TextConstants.defaultPrimary,)),
         ],
       ),
       onTap: ()=>{
-        Bandnames.addCount(bnSnapShot.reference, 1),
       },
     );
   }
@@ -43,7 +50,7 @@ class _ChatPageState extends State<ChatPage>{
     for(int i = 0; i < querySnapshot.docs.length; i++){
       QueryDocumentSnapshot<Userinfo> documentSnapshot = querySnapshot.docs[i];
       Userinfo userinfo = documentSnapshot.data();
-      _list.add(userinfo.displayName);
+      _list.add(UserinfoWrapper(userinfo));
     }
     return _list;
   }
@@ -57,6 +64,7 @@ class _ChatPageState extends State<ChatPage>{
 
   @override
   Widget build(BuildContext context) {
+    Stream<DocumentSnapshot<DiscussionsList>> userDiscussions = DiscussionsList.getUserDiscussionsList(FirebaseAuth.instance.currentUser!.uid);
     return Scaffold(
         backgroundColor: ColorConstants.background,
         body: Padding(
@@ -70,21 +78,29 @@ class _ChatPageState extends State<ChatPage>{
                   decoration: InputDecorationBuilder().addLabel("Search").build(),
                   future: () {
                     return fetchData();
+                  },
+                  getSelectedValue: (UserinfoWrapper value) {
+                    Discussion.openDiscussion([value.value.uid, FirebaseAuth.instance.currentUser!.uid]); // this prints the selected option which could be an object
                   }),
               Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: bandnamesStream,
-                  builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                child: StreamBuilder<DocumentSnapshot<DiscussionsList>>(
+                  stream: userDiscussions,
+                  builder: (BuildContext context, AsyncSnapshot<DocumentSnapshot<DiscussionsList>> snapshot) {
                     if (snapshot.hasError) {
                       return const Text('Something went wrong', style: TextConstants.titlePrimary);
                     }
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Text("Loading", style: TextConstants.titlePrimary);
                     }
-                    return ListView.builder(
-                      itemCount: snapshot.data!.docs.length,
-                      itemBuilder: (context, index) => _buildListItem(context, snapshot.data!.docs[index] as DocumentSnapshot<Bandnames>),
-                    );
+                    if (snapshot.hasData && snapshot.data!.data() != null) {
+                      return ListView.builder(
+                        itemCount: snapshot.data!.data()!.discussionsIds.length,
+                        itemBuilder: (context, index) => _buildListItem(context, snapshot.data!.data()!.discussionsIds[index]),
+                      );
+                    }
+                    else{
+                      return const Text("Aucune Discussion", style: TextConstants.defaultPrimary,);
+                    }
                   },
 
                 ),
