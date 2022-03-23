@@ -28,10 +28,15 @@ class DiscussionsList{
 
   Future<void> addDiscussion(String discussionId){
     CollectionReference discussionsList = discussionsListRef();
-    // Call the user's CollectionReference to add a new user
     Map<String, Object?> json = toJson();
     List<dynamic> newList = discussionsIds;
-    newList.add(discussionId);
+    if(newList.contains(discussionId)){
+      newList.remove(discussionId);
+      newList.insert(0, discussionId);
+    }
+    else{
+      newList.insert(0, discussionId);
+    }
     json['discussionsIds'] = newList;
     return discussionsList
         .doc(uid)

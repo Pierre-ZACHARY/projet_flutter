@@ -5,11 +5,11 @@ import 'package:projet_flutter/modele/DiscussionsList.dart';
 class Discussion {
   // correspond à une discussion entre deux ou plusieurs utilisateurs
   final String discussion_id;
-  final List<String> messagesIds;
-  final List<String> usersIds;
+  final List<dynamic> messagesIds;
+  final List<dynamic> usersIds;
 
   Discussion({required this.discussion_id, required this.messagesIds, required this.usersIds});
-  Discussion.fromJson(Map<String, Object?> json) : this(discussion_id: json['uid']! as String, messagesIds: json['messagesIds']! as List<String>, usersIds: json['usersIds']! as List<String> );
+  Discussion.fromJson(Map<String, Object?> json) : this(discussion_id: json['discussion_id']! as String, messagesIds: json['messagesIds']! as List<dynamic>, usersIds: json['usersIds']! as List<dynamic> );
   Map<String, Object?> toJson() {
     return {
       'discussion_id': discussion_id,
@@ -19,7 +19,7 @@ class Discussion {
   }
 
   static Stream<DocumentSnapshot<Discussion>> getDiscussionStream(String discussion_id){
-    return FirebaseFirestore.instance.collection('discussionsList').doc(discussion_id).withConverter<Discussion>(
+    return FirebaseFirestore.instance.collection('discussion').doc(discussion_id).withConverter<Discussion>(
       fromFirestore: (snapshot, _) => Discussion.fromJson(snapshot.data()!),
       toFirestore: (bandnames, _) => bandnames.toJson(),
     ).snapshots();
@@ -35,12 +35,8 @@ class Discussion {
       discussionId += uid;
     }
     // TODO on veut hash discussionId pour en réduire la taille ( une liste d'utilisateur = un id, toujours le même pour une même liste, mais pas besoin de pouvoir retrouver cette liste à partir de l'id )
-    print(discussionId);
     Stream<DocumentSnapshot<Discussion>> discussionStream = getDiscussionStream(discussionId);
-    print(discussionStream.length);
     DocumentSnapshot<Discussion> snapshot = await discussionStream.first;
-    print(snapshot);
-    print(snapshot.data());
     if (snapshot.data() != null) {
       Map<String, Object?> json = snapshot.data()!.toJson();
       print(json);
