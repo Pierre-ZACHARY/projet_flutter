@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:projet_flutter/modele/UserInfo.dart';
+import 'package:projet_flutter/utils/authUtils.dart';
 import 'package:projet_flutter/utils/cloudStorageUtils.dart';
 import 'package:projet_flutter/utils/constant.dart';
 import 'package:image_picker/image_picker.dart';
@@ -25,46 +26,92 @@ class ProfilePage extends StatefulWidget{
     }
   }
 
+  Future<void> onPseudoEditingComplete(TextEditingController pseudoController, Userinfo uinfo) async {
+    if(uinfo.displayName != pseudoController.value.text){
+      await uinfo.updateDisplayName(pseudoController.value.text);
+    }
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
 }
 
 class _ProfilePageState extends State<ProfilePage>{
+
+  TextEditingController pseudoController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     //String networkImgUrl = await FirebaseStorage.instance.ref(CloudStorage.profilePicturePath+FirebaseAuth.instance.currentUser!.uid+".png").getDownloadURL();
     String uid = (FirebaseAuth.instance.currentUser!.uid);
     print(uid);
-    return Scaffold(
-      backgroundColor: ColorConstants.background,
-      body: StreamBuilder<DocumentSnapshot>(
+    return StreamBuilder<DocumentSnapshot>(
         stream: Userinfo.getUserDocumentStream(FirebaseAuth.instance.currentUser!.uid),
         builder: (context, snapshot) {
+          if(snapshot.data == null){
+            return const Text("Loading...");
+          }
           Userinfo uinfo = snapshot.data!.data()! as Userinfo;
+          pseudoController.text = uinfo.displayName;
+          return GestureDetector(
+            onTap: () => widget.onPseudoEditingComplete(pseudoController, uinfo),
+            child: Scaffold(
+              backgroundColor: ColorConstants.background,
+              body: Padding(
+                padding: EdgeInsets.all(40),
+                child: Column(
+                  children:  [
+                      Column(
+                          children: [
+                            GestureDetector(
+                              onTap: () => {
+                                widget.onProfilePictureTap(uinfo)
+                              },
+                              child: CircleAvatar(
+                                    backgroundColor: Colors.white,
+                                    backgroundImage: AssetImage('assets/images/default-profile-picture.png'),
+                                    foregroundImage: NetworkImage(uinfo.imgUrl),
+                                    radius: 100,
+                                  ),
+                            ),
+                            Padding(
+                              padding: EdgeInsets.fromLTRB(0, 20, 0, 20),
+                              child: TextFormField(
+                                style: TextConstants.defaultPrimary,
+                                maxLength: 20,
+                                controller: pseudoController,
+                                onEditingComplete: () => widget.onPseudoEditingComplete(pseudoController, uinfo),
+                                decoration: InputDecorationBuilder().addLabel("Pseudo").setBorderRadius(BorderRadius.circular(20)).build(),
+                                cursorColor: ColorConstants.primaryHighlight,
+                              ),
+                            ),
 
-          return Column(
-            children:  [
-              Expanded(
-                child: Center(
-                  child: Expanded(
-                    child: GestureDetector(
-                      onTap: () => {
-                        widget.onProfilePictureTap(uinfo)
-                      },
-                      child: CircleAvatar(
-                            backgroundColor: Colors.white,
-                            backgroundImage: AssetImage('assets/images/default-profile-picture.png'),
-                            foregroundImage: NetworkImage(uinfo.imgUrl),
-                            radius: 100,
-                          ),
+                          ]
+                        ),
+
+                    Expanded(child: Text("")),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                              style: ButtonStyle(
+                                backgroundColor: MaterialStateProperty.all(ColorConstants.backgroundHighlight),
+                              ),
+                              onPressed: ()=> AuthUtils.Logout(),
+                              child: Text("Logout", style: TextConstants.defaultPrimary,)),
+                        )
+                      ],
                     ),
-                  ),
+
+
+
+                  ],
                 ),
               ),
-
-            ],
+            ),
           );
         }
-      ),
-    );
+      );
+
   }
 
 }

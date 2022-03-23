@@ -37,6 +37,10 @@ class AuthUtils{
       }
     }
   }
+
+  static Logout() async {
+    await FirebaseAuth.instance.signOut();
+  }
 }
 
 
