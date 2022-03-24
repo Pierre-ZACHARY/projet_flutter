@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:projet_flutter/app/home/chats/chat_room.dart';
 import 'package:projet_flutter/modele/Discussion.dart';
 import 'package:projet_flutter/modele/DiscussionsList.dart';
 import 'package:projet_flutter/modele/UserInfo.dart';
@@ -48,12 +49,13 @@ class _ChatPageState extends State<ChatPage>{
           return StreamBuilder<DocumentSnapshot<Userinfo>>(
             stream: otherUserStream,
             builder: (context, snapshot) {
-              if (snapshot.hasError || !snapshot.hasData || snapshot.data!.data() == null) {
-                return const Text('Something went wrong', style: TextConstants.titlePrimary);
-              }
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Text("Loading", style: TextConstants.titlePrimary);
               }
+              if (snapshot.hasError || !snapshot.hasData || snapshot.data!.data() == null) {
+                return const Text('Something went wrong', style: TextConstants.titlePrimary);
+              }
+
               Userinfo otherUserInfo = snapshot.data!.data()!;
               return ListTile(
                 contentPadding: const EdgeInsets.all(0.0),
@@ -71,6 +73,7 @@ class _ChatPageState extends State<ChatPage>{
                   ],
                 ),
                 onTap: ()=>{
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => ChatRoom(discussionStream: discussionStream)))
                 },
               );
             }
