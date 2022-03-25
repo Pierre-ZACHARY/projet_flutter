@@ -41,58 +41,26 @@ class _ChatPageState extends State<ChatPage>{
           return const Text("Loading", style: TextConstants.titlePrimary);
         }
         Discussion discussion = snapshot.data!.data()!;
-        if(discussion.usersIds.length == 2){
-          // le cas où c'est une conversation entre 2 utilisateurs : on veut afficher le pseudo / l'image de l'autre utilisateur
-          String currentUid = FirebaseAuth.instance.currentUser!.uid;
-          String otherUid = discussion.usersIds[0] == currentUid ? discussion.usersIds[1] : discussion.usersIds[0];
-          Stream<DocumentSnapshot<Userinfo>> otherUserStream = Userinfo.getUserDocumentStream(otherUid);
-          return StreamBuilder<DocumentSnapshot<Userinfo>>(
-            stream: otherUserStream,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Text("Loading", style: TextConstants.titlePrimary);
-              }
-              if (snapshot.hasError || !snapshot.hasData || snapshot.data!.data() == null) {
-                return const Text('Something went wrong', style: TextConstants.titlePrimary);
-              }
 
-              Userinfo otherUserInfo = snapshot.data!.data()!;
-              return ListTile(
-                contentPadding: const EdgeInsets.all(0.0),
-                title: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: Colors.white,
-                      backgroundImage: AssetImage('assets/images/default-profile-picture.png'),
-                      foregroundImage: otherUserInfo.imgUrl != "" ? NetworkImage(otherUserInfo.imgUrl) : null,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Expanded(child: Text(otherUserInfo.displayName, style: TextConstants.defaultPrimary,)),
-                    ),
-                  ],
-                ),
-                onTap: ()=>{
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => ChatRoom(discussionStream: discussionStream)))
-                },
-              );
-            }
-          );
-        }
-        else{
-          // TODO le cas où c'est une conversation avec plus de 2 utilisateurs : il y a une image et un nom propre à la conversation ( groupe )
-          return ListTile(
-            title: Row(
-              children: [
-                Expanded(child: Text(discussionId, style: TextConstants.defaultPrimary,)),
-              ],
-            ),
-            onTap: ()=>{
-            },
-          );
-        }
+        return ListTile(
+          contentPadding: const EdgeInsets.all(0.0),
+          title: Row(
+            children: [
+              discussion.getDiscussionCircleAvatar(),
+              Expanded(child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: discussion.getTitleTextWidget(),
+              ))
+            ],
+          ),
+          onTap: ()=>{
+            Navigator.push(context, MaterialPageRoute(builder: (context) => ChatRoom(discussionId: discussionId)))
+          },
+        );
       }
     );
+
+
   }
 
   TextEditingController myController = TextEditingController();

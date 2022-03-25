@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:projet_flutter/modele/DiscussionsList.dart';
+import 'package:projet_flutter/modele/UserInfo.dart';
+import 'package:projet_flutter/utils/constant.dart';
 
 class Discussion {
   // correspond à une discussion entre deux ou plusieurs utilisateurs
@@ -18,6 +21,77 @@ class Discussion {
     };
   }
 
+  Widget getDiscussionCircleAvatar(){
+    //renvoi le titre de la discussion
+    if(usersIds.length == 2) {
+      // le cas où c'est une conversation entre 2 utilisateurs : on veut afficher le pseudo / l'image de l'autre utilisateur
+      String currentUid = FirebaseAuth.instance.currentUser!.uid;
+      String otherUid = usersIds[0] == currentUid ? usersIds[1] : usersIds[0];
+      Stream<DocumentSnapshot<Userinfo>> otherUserStream = Userinfo
+          .getUserDocumentStream(otherUid);
+
+      return StreamBuilder<DocumentSnapshot<Userinfo>>(
+          stream: otherUserStream,
+          builder: (context, snapshot)
+          {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Text("Loading", style: TextConstants.titlePrimary);
+            }
+            if (snapshot.hasError || !snapshot.hasData ||
+                snapshot.data!.data() == null) {
+              return const Text('Something went wrong', style: TextConstants.titlePrimary);
+            }
+
+            Userinfo otherUserInfo = snapshot.data!.data()!;
+            return CircleAvatar(
+                  backgroundColor: Colors.white,
+                  backgroundImage: const AssetImage('assets/images/default-profile-picture.png'),
+                  foregroundImage: otherUserInfo.imgUrl != "" ? NetworkImage(otherUserInfo.imgUrl) : null,
+                );
+          });
+    }
+    else{
+      // TODO le cas où c'est une conv de groupe on veut qu'elle ait un titre modifiable
+      return const CircleAvatar(
+                    backgroundColor: Colors.white,
+                    backgroundImage: AssetImage('assets/images/default-profile-picture.png'),
+                  );
+    }
+
+  }
+
+  Widget getTitleTextWidget(){
+    //renvoi le titre de la discussion
+    if(usersIds.length == 2) {
+      // le cas où c'est une conversation entre 2 utilisateurs : on veut afficher le pseudo / l'image de l'autre utilisateur
+      String currentUid = FirebaseAuth.instance.currentUser!.uid;
+      String otherUid = usersIds[0] == currentUid ? usersIds[1] : usersIds[0];
+      Stream<DocumentSnapshot<Userinfo>> otherUserStream = Userinfo
+          .getUserDocumentStream(otherUid);
+
+      return StreamBuilder<DocumentSnapshot<Userinfo>>(
+          stream: otherUserStream,
+          builder: (context, snapshot)
+      {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Text("Loading", style: TextConstants.titlePrimary);
+        }
+        if (snapshot.hasError || !snapshot.hasData ||
+            snapshot.data!.data() == null) {
+          return const Text('Something went wrong', style: TextConstants.titlePrimary);
+        }
+
+        Userinfo otherUserInfo = snapshot.data!.data()!;
+        return Text(otherUserInfo.displayName, style: TextConstants.defaultPrimary,);
+      });
+    }
+    else{
+      // TODO le cas où c'est une conv de groupe on veut qu'elle ait un titre modifiable
+      return const Text("Titre");
+    }
+
+  }
+
   static Stream<DocumentSnapshot<Discussion>> getDiscussionStream(String discussion_id){
     return FirebaseFirestore.instance.collection('discussion').doc(discussion_id).withConverter<Discussion>(
       fromFirestore: (snapshot, _) => Discussion.fromJson(snapshot.data()!),
@@ -26,6 +100,7 @@ class Discussion {
   }
 
   static Future<void> openDiscussion(List<String> usersIds) async {
+    // ouvre une nouvelle discussion entre les différents utilisateurs --> la place en première position de leur file si elle est déjà ouverte ( utile pour refresh )
     print(usersIds);
     CollectionReference discussion = FirebaseFirestore.instance.collection(
         'discussion');
