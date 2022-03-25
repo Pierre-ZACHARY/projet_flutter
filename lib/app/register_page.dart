@@ -1,33 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:projet_flutter/app/register_page.dart';
-import 'package:projet_flutter/utils/authUtils.dart';
-import 'package:projet_flutter/utils/constant.dart';
 
-class ConnexionPage extends StatefulWidget {
-  const ConnexionPage(BuildContext context, {Key? key, required this.title}) : super(key: key);
+import '../utils/authUtils.dart';
+import '../utils/constant.dart';
+
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({Key? key, required this.title}) : super(key: key);
   final String title;
   @override
-  State<ConnexionPage> createState() => _ConnexionPageState();
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _ConnexionPageState extends State<ConnexionPage> {
 
-  // TODO Ajouter State Register, ajouter Google / apple Sign In, Ajouter retour d'actions ( spinner ou barre de chargement ... ), gérer les erreurs retourner par login /register
+class _RegisterPageState extends State<RegisterPage> {
+
+  // TODO Ajouter Google / apple Sign up, Ajouter retour d'actions ( spinner ou barre de chargement ... ), gérer les erreurs retourner par login /register
   // voir https://medium.com/flutter-community/make-progress-button-in-flutter-d4e2d27bd1d7 pour le chargement du bouton login par ex
 
-  bool rememberMe = false;
-  String email = "", password = "";
+  String email = "", password = "", username = "";
   final emailController = TextEditingController();
+  final usernameController = TextEditingController();
   final passwordController = TextEditingController();
 
-
-  Future<void> Login(String email, String password) async {
-    AuthUtils.Login(email, password);
-  }
-
-  Future<void> Register(String email, String password) async {
-    AuthUtils.Register(email, password);
+  Future<void> register(String email, String password, {String? displayName}) async {
+    AuthUtils.Register(email, password, displayName: displayName);
   }
 
   Column makeEmailEntry(){
@@ -57,6 +53,41 @@ class _ConnexionPageState extends State<ConnexionPage> {
                 color: Colors.white,
               ),
               hintText: "Enter your email address",
+              hintStyle: kHintTextStyle,
+            ),
+          ),
+        )
+      ],
+    );
+  }
+
+  Column makeUsernameEntry(){
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        const Text(
+          "Username",
+          style: kLabelStyle,
+        ),
+        const SizedBox(height: 10.0),
+        Container(
+          alignment: Alignment.centerLeft,
+          decoration: kBoxDecorationStyle,
+          height: 60.0,
+          child: TextField(
+            controller: usernameController,
+            keyboardType: TextInputType.name,
+            style: const TextStyle(
+                color: Colors.white,
+                fontFamily: "OpenSans"),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.only(top: 14.0),
+              prefixIcon: Icon(
+                Icons.account_circle,
+                color: Colors.white,
+              ),
+              hintText: "Enter your username",
               hintStyle: kHintTextStyle,
             ),
           ),
@@ -100,35 +131,14 @@ class _ConnexionPageState extends State<ConnexionPage> {
     );
   }
 
-  Container makePasswordForgotButton(){
-    return Container(
-      alignment: Alignment.centerRight,
-      child: TextButton(
-        onPressed: () => print("Forgot password pressed"),
-        child: const Text(
-          "Forgot Password ?",
-          style: kLabelStyle,
-        ),
-      ),
-    );
-  }
-
-  Checkbox makeRememberCheckBox(){
-    return Checkbox(
-      value: rememberMe,
-      checkColor: Colors.green,
-      activeColor: Colors.white,
-      onChanged: (value) {
-        setState(() {
-          rememberMe = value!;
-        });
-      },
-    );
-  }
-
-  ElevatedButton makeLogInButton(){
+  ElevatedButton makeRegisterButton(){
     return ElevatedButton(
-      onPressed: () => Login(emailController.text, passwordController.text),
+      onPressed: ()
+      {
+        register(emailController.text, passwordController.text,
+            displayName: usernameController.text);
+        Navigator.pop(context);
+      },
       style: ButtonStyle(
         backgroundColor: MaterialStateProperty.all<Color>(Colors.white),
         padding:  MaterialStateProperty.all<EdgeInsetsGeometry>(const EdgeInsets.all(15.0)),
@@ -139,7 +149,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
         ),
       ),
       child: const Text(
-        "Log-in",
+        "Register",
         style: TextStyle(
             color: Color(0xFF154da4),
             letterSpacing: 2.0,
@@ -151,7 +161,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
     );
   }
 
-  Column makeSignInText(){
+  Column makeSignUpText(){
     return Column(
       children: const <Widget>[
         Text(
@@ -163,7 +173,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
         ),
         SizedBox(height: 10.0),
         Text(
-            "Sign in with",
+            "Sign-Up with",
             style: kLabelStyle)
       ],
     );
@@ -230,7 +240,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
                         const Text(
-                          "Sign-In",
+                          "Sign-Up",
                           style: TextStyle(
                             color: Colors.white,
                             fontFamily: "OpenSans",
@@ -238,29 +248,18 @@ class _ConnexionPageState extends State<ConnexionPage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 30.0),
+                        const SizedBox(height: 20.0),
+                        makeUsernameEntry(),
+                        const SizedBox(height: 20.0),
                         makeEmailEntry(),
                         const SizedBox(height: 20.0),
                         makePasswordEntry(),
-                        makePasswordForgotButton(),
-                        Row(
-                          children: <Widget>[
-                            Theme(
-                                data: ThemeData(unselectedWidgetColor: Colors.white),
-                                child: makeRememberCheckBox()
-                            ),
-                            const Text(
-                              "Remember me",
-                              style: kLabelStyle,
-                            ),
-                          ],
-                        ),
                         Container(
                             padding: const EdgeInsets.symmetric(vertical: 25.0),
                             width: double.infinity,
-                            child: makeLogInButton()
+                            child: makeRegisterButton()
                         ),
-                        makeSignInText(),
+                        makeSignUpText(),
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 20.0),
                           child: Row(
@@ -273,13 +272,14 @@ class _ConnexionPageState extends State<ConnexionPage> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => const RegisterPage(title: "Register"))),
+                          onTap: () {
+                            Navigator.pop(context);
+                          },
                           child: RichText(
                               text: const TextSpan(
                                   children: [
                                     TextSpan(
-                                        text: "No account ? ",
+                                        text: "Aleary have an account ? ",
                                         style: TextStyle(
                                             color: Colors.white,
                                             fontSize: 18.0,
@@ -287,7 +287,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
                                         )
                                     ),
                                     TextSpan(
-                                        text: "Sign-Up",
+                                        text: "Sign-In",
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontSize: 18.0,
