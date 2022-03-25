@@ -24,7 +24,7 @@ class AuthUtils{
     }
   }
 
-  static Future<void> Register(String email, String password, {Persistence? persistence}) async {
+  static Future<void> Register(String email, String password, {Persistence? persistence, String? displayName}) async {
     try {
       if(persistence!= null){
         await FirebaseAuth.instance.setPersistence(persistence);
@@ -33,7 +33,7 @@ class AuthUtils{
           email: email,
           password: password
       );
-      Userinfo userInfo = Userinfo(displayName: email.split("@").first, active: true, uid: userCredential.user!.uid, imgUrl: '', );
+      Userinfo userInfo = Userinfo(displayName: displayName ?? email.split("@").first, active: true, uid: userCredential.user!.uid, imgUrl: '', );
       await userInfo.Update();
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
