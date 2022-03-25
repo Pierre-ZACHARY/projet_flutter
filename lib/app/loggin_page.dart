@@ -1,6 +1,6 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:projet_flutter/app/register_page.dart';
 import 'package:projet_flutter/utils/authUtils.dart';
 import 'package:projet_flutter/utils/constant.dart';
 
@@ -139,7 +139,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
         ),
       ),
       child: const Text(
-        "Log in",
+        "Log-in",
         style: TextStyle(
             color: Color(0xFF154da4),
             letterSpacing: 2.0,
@@ -161,7 +161,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
               fontWeight: FontWeight.w500
           ),
         ),
-        SizedBox(height: 20.0),
+        SizedBox(height: 10.0),
         Text(
             "Sign in with",
             style: kLabelStyle)
@@ -194,7 +194,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
   }
   @override
   Widget build(BuildContext context) {
-    Register("pierre.zachary45@gmail.com", "password");
+    // Register("nicolas.loison45@gmail.com", "password", displayName: "Ouais la team");
     emailController.text = "";
     return Scaffold(
       body: AnnotatedRegion<SystemUiOverlayStyle>(
@@ -224,13 +224,13 @@ class _ConnexionPageState extends State<ConnexionPage> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 40.0,
-                      vertical: 120.0,
+                      vertical: 70.0,
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: <Widget>[
                         const Text(
-                          "Sign in",
+                          "Sign-In",
                           style: TextStyle(
                             color: Colors.white,
                             fontFamily: "OpenSans",
@@ -240,7 +240,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
                         ),
                         const SizedBox(height: 30.0),
                         makeEmailEntry(),
-                        const SizedBox(height: 30.0),
+                        const SizedBox(height: 20.0),
                         makePasswordEntry(),
                         makePasswordForgotButton(),
                         Row(
@@ -262,7 +262,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
                         ),
                         makeSignInText(),
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 30.0),
+                          padding: const EdgeInsets.symmetric(vertical: 20.0),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: <Widget>[
@@ -273,7 +273,8 @@ class _ConnexionPageState extends State<ConnexionPage> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => print("Sign up tap"),
+                          onTap: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => const RegisterPage(title: "Register"))),
                           child: RichText(
                               text: const TextSpan(
                                   children: [
@@ -286,7 +287,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
                                         )
                                     ),
                                     TextSpan(
-                                        text: "Sign Up",
+                                        text: "Sign-Up",
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontSize: 18.0,
@@ -301,7 +302,6 @@ class _ConnexionPageState extends State<ConnexionPage> {
                     )
                 ),
               )
-
             ],
           ),
         ),
