@@ -181,7 +181,10 @@ class _RegisterPageState extends State<RegisterPage> {
 
   GestureDetector makeSignInWithGoogleButton(){
     return GestureDetector(
-      onTap: () => print("Login with Google"),
+      onTap: () async {
+        await AuthUtils.googleLogin();
+        Navigator.pop(context);
+      },
       child: Container(
         height: 60,
         width: 60,
@@ -204,7 +207,6 @@ class _RegisterPageState extends State<RegisterPage> {
   }
   @override
   Widget build(BuildContext context) {
-    // Register("nicolas.loison45@gmail.com", "password", displayName: "Ouais la team");
     emailController.text = "";
     return Scaffold(
       body: AnnotatedRegion<SystemUiOverlayStyle>(

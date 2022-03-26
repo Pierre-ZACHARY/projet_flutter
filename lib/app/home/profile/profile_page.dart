@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:projet_flutter/modele/UserInfo.dart';
 import 'package:projet_flutter/utils/authUtils.dart';
@@ -37,12 +36,43 @@ class ProfilePage extends StatefulWidget{
 class _ProfilePageState extends State<ProfilePage>{
 
   TextEditingController pseudoController = TextEditingController();
+  bool _buttonPressed = false;
+  bool _loopActive = false;
+  final int _maxCounter = 40;
+  double _dynamicPadding = 0;
+  int _counter = 0;
+
+  void _increaseCounterWhilePressed() async {
+
+    if (_loopActive) return;// check if loop is active
+
+    _loopActive = true;
+
+    while (_buttonPressed) {
+      if (_counter >= _maxCounter){
+        await AuthUtils.Logout();
+      }
+      else{
+        setState(() {
+          _counter++;
+          _dynamicPadding = 40;
+        });
+      }
+      await Future.delayed(const Duration(milliseconds: 10));
+    }
+    if (_counter < _maxCounter){
+      setState(() {
+        _counter = 0;
+        _dynamicPadding = 0;
+      });
+      _counter = 0;
+      _loopActive = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     //String networkImgUrl = await FirebaseStorage.instance.ref(CloudStorage.profilePicturePath+FirebaseAuth.instance.currentUser!.uid+".png").getDownloadURL();
-    String uid = (FirebaseAuth.instance.currentUser!.uid);
-    print(uid);
     return StreamBuilder<DocumentSnapshot>(
         stream: Userinfo.getUserDocumentStream(FirebaseAuth.instance.currentUser!.uid),
         builder: (context, snapshot) {
@@ -56,7 +86,7 @@ class _ProfilePageState extends State<ProfilePage>{
             child: Scaffold(
               backgroundColor: ColorConstants.background,
               body: Padding(
-                padding: EdgeInsets.all(40),
+                padding: const EdgeInsets.fromLTRB(40,20,40,40),
                 child: Column(
                   children:  [
                       Column(
@@ -67,13 +97,13 @@ class _ProfilePageState extends State<ProfilePage>{
                               },
                               child: CircleAvatar(
                                     backgroundColor: Colors.white,
-                                    backgroundImage: AssetImage('assets/images/default-profile-picture.png'),
+                                    backgroundImage: const AssetImage('assets/images/default-profile-picture.png'),
                                     foregroundImage: NetworkImage(uinfo.imgUrl),
                                     radius: 100,
                                   ),
                             ),
                             Padding(
-                              padding: EdgeInsets.fromLTRB(0, 20, 0, 20),
+                              padding: const EdgeInsets.fromLTRB(0, 20, 0, 20),
                               child: TextFormField(
                                 style: TextConstants.defaultPrimary,
                                 maxLength: 20,
@@ -87,9 +117,11 @@ class _ProfilePageState extends State<ProfilePage>{
                           ]
                         ),
 
-                    Expanded(child: Text("")),
+                    const Expanded(
+                        child: Text(""),
+                    ),
                     Row(
-                      children: [
+                      children: <Widget>[
                         Expanded(
                           child: ElevatedButton(
                               style: ButtonStyle(
@@ -97,27 +129,73 @@ class _ProfilePageState extends State<ProfilePage>{
                               ),
                               //TODO settings pour activer / désativer le mode public, plus tard settings pour activer / désactiver les push notif
                               onPressed: () {  },
-                              child: Text("Settings", style: TextConstants.defaultSecondary)),
+                              child: const Text("Settings", style: TextConstants.defaultSecondary)),
                         )
                       ],
                     ),
                     Row(
-                      children: [
+                      children: <Widget>[
                         Expanded(
-                          child: ElevatedButton(
-                              style: ButtonStyle(
-                                backgroundColor: MaterialStateProperty.all(ColorConstants.backgroundHighlight),
+                          child: Listener(
+                            onPointerDown: (details) {
+                              _buttonPressed = true;
+                              _increaseCounterWhilePressed();
+                            },
+                            onPointerUp: (details) {
+                              _buttonPressed = false;
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: ColorConstants.backgroundHighlight,
+                                borderRadius: const BorderRadius.all(Radius.circular(5)),
+                                border: Border.all(
+                                  style: BorderStyle.none,
+                                ),
                               ),
-                              // TODO Ajouter chargement sur le logout ( synchro avec le longpress )
-                              onLongPress: ()=> AuthUtils.Logout(),
-                              onPressed: () {  },
-                              child: Text("Logout", style: TextConstants.defaultPrimary,)),
-                        )
+                              padding: const EdgeInsets.all(10.0),
+                              child: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: <Widget>[
+                                    Column(
+                                      children: const [
+                                        Text(
+                                            'Logout',
+                                            textAlign: TextAlign.center,
+                                            style: TextConstants.defaultSecondary
+                                        )
+                                      ],
+                                    ),
+                                    Column(
+                                      children: [
+                                        SizedBox(
+                                          width: _dynamicPadding,
+                                        )
+                                      ],
+                                    ),
+                                    Column(
+                                      children: [
+                                        Visibility(
+                                          child: SizedBox(
+                                            child: CircularProgressIndicator(
+                                              color: Colors.blue,
+                                              value: _counter / _maxCounter,
+                                            ),
+                                            height: 20.0,
+                                            width: 20.0,
+                                          ),
+                                          visible: _dynamicPadding!=0,
+                                        )
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
-
-
-
                   ],
                 ),
               ),

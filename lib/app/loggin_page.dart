@@ -171,7 +171,9 @@ class _ConnexionPageState extends State<ConnexionPage> {
 
   GestureDetector makeSignInWithGoogleButton(){
     return GestureDetector(
-      onTap: () => print("Login with Google"),
+      onTap: () async {
+        await AuthUtils.googleLogin();
+      },
       child: Container(
         height: 60,
         width: 60,

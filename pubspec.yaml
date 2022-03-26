@@ -31,6 +31,7 @@ dependencies:
   firebase_core:
   cloud_firestore:
   firebase_auth:
+  google_sign_in:
   flutter_riverpod:
   firebase_storage:
   path_provider:
