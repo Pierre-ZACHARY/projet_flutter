@@ -3,6 +3,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 
 
 
@@ -22,6 +23,14 @@ class Userinfo{
       'imgUrl': imgUrl,
       'active': active,
     };
+  }
+
+  Widget getCircleAvatar(){
+    return CircleAvatar(
+      backgroundColor: Colors.white,
+      backgroundImage: AssetImage('assets/images/default-profile-picture.png'),
+      foregroundImage: NetworkImage(imgUrl),
+    );
   }
 
   static Stream<DocumentSnapshot<Userinfo>> getUserDocumentStream(String uid){

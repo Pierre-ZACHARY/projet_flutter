@@ -19,7 +19,6 @@ class ProfilePage extends StatefulWidget{
 
   Future<void> onProfilePictureTap(Userinfo uinfo) async {
     final ImagePicker _picker = ImagePicker();
-    print("test");
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if(image != null){
       CloudStorage.uploadUserProfilePicture(File(image.path), uinfo);
