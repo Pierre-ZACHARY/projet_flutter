@@ -51,7 +51,7 @@ class _ProfilePageState extends State<ProfilePage>{
     _loopActive = true;
 
     while (_buttonPressed) {
-      if (_counter>=_maxCounter){
+      if (_counter >= _maxCounter){
         AuthUtils.Logout();
       }
       else{
@@ -60,13 +60,18 @@ class _ProfilePageState extends State<ProfilePage>{
           _dynamicPadding = 40;
         });
       }
+      print("Passe");
       await Future.delayed(const Duration(milliseconds: 10));
     }
-    if (_counter<_maxCounter){
+    print("Passe2");
+
+    if (_counter < _maxCounter){
+      print("Passe3");
       setState(() {
         _counter = 0;
         _dynamicPadding = 0;
       });
+      _counter = 0;
       _loopActive = false;
     }
   }
@@ -124,7 +129,7 @@ class _ProfilePageState extends State<ProfilePage>{
                         child: Text(""),
                     ),
                     Row(
-                      children: [
+                      children: <Widget>[
                         Expanded(
                           child: ElevatedButton(
                               style: ButtonStyle(
@@ -137,73 +142,78 @@ class _ProfilePageState extends State<ProfilePage>{
                       ],
                     ),
                     Row(
-                      children: [
+                      children: <Widget>[
                         Expanded(
-                          // child: ElevatedButton(
-                          //     style: ButtonStyle(
-                          //       backgroundColor: MaterialStateProperty.all(ColorConstants.backgroundHighlight),
-                          //     ),
-                          //     // TODO Ajouter chargement sur le logout ( synchro avec le longpress )
-                          //     onLongPress: ()=> AuthUtils.Logout(),
-                          //     onPressed: () {  },
-                          //     child: Text("Logout", style: TextConstants.defaultPrimary,)),
-                          child: Listener(
-                            onPointerDown: (details) {
-                              _buttonPressed = true;
-                              _increaseCounterWhilePressed();
-                            },
-                            onPointerUp: (details) {
-                              _buttonPressed = false;
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(color: ColorConstants.backgroundHighlight, border: Border.all()),
-                              padding: const EdgeInsets.all(16.0),
-                              child: Center(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: <Widget>[
-                                    Column(
-                                      children: const [
-                                        Text(
-                                            'Logout',
-                                            textAlign: TextAlign.center,
-                                            style: TextConstants.defaultSecondary
-                                        )
+                          child: Container(
+                            // color: ColorConstants.backgroundHighlight,
+                            // foregroundDecoration,: DecoratedBox(
+                            //   decoration: ,
+                            // ),
+                              // style: ButtonStyle(
+                              //   backgroundColor: MaterialStateProperty.all(ColorConstants.backgroundHighlight),
+                              // ),
+                              // onPressed: () {  },
+                              child: Listener(
+                                onPointerDown: (details) {
+                                  _buttonPressed = true;
+                                  _increaseCounterWhilePressed();
+                                },
+                                onPointerUp: (details) {
+                                  _buttonPressed = false;
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: ColorConstants.backgroundHighlight,
+                                    borderRadius: const BorderRadius.all(Radius.circular(5)),
+                                    border: Border.all(
+                                      style: BorderStyle.none,
+                                    ),
+                                  ),
+                                  padding: const EdgeInsets.all(10.0),
+                                  child: Center(
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: <Widget>[
+                                        Column(
+                                          children: const [
+                                            Text(
+                                                'Logout',
+                                                textAlign: TextAlign.center,
+                                                style: TextConstants.defaultSecondary
+                                            )
+                                          ],
+                                        ),
+                                        Column(
+                                          children: [
+                                            SizedBox(
+                                              width: _dynamicPadding,
+                                            )
+                                          ],
+                                        ),
+                                        Column(
+                                          children: [
+                                            Visibility(
+                                              child: SizedBox(
+                                                child: CircularProgressIndicator(
+                                                  color: Colors.blue,
+                                                  value: _counter / _maxCounter,
+                                                ),
+                                                height: 20.0,
+                                                width: 20.0,
+                                              ),
+                                              visible: _dynamicPadding!=0,
+                                            )
+                                          ],
+                                        ),
                                       ],
                                     ),
-                                    Column(
-                                      children: [
-                                        SizedBox(
-                                          width: _dynamicPadding,
-                                        )
-                                      ],
-                                    ),
-                                    Column(
-                                      children: [
-                                        Visibility(
-                                          child: SizedBox(
-                                            child: CircularProgressIndicator(
-                                              color: Colors.blue,
-                                              value: _counter / _maxCounter,
-                                            ),
-                                            height: 20.0,
-                                            width: 20.0,
-                                          ),
-                                          visible: _dynamicPadding!=0,
-                                        )
-                                      ],
-                                    ),
-                                  ],
+                                  ),
                                 ),
-                              )
-                            ),
+                              ),
                           ),
                         ),
                       ],
                     ),
-
-
-
                   ],
                 ),
               ),
