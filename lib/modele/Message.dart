@@ -1,7 +1,11 @@
 
 
 
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:projet_flutter/utils/cloudStorageUtils.dart';
 
 class Message{
 
@@ -38,10 +42,15 @@ class Message{
     };
   }
 
-  static Message? newMessage({required String discussionId, required String userId, required int type, required String messageContent, String? imgUrl, String? stickerId}){
+  static Future<Message?> newMessage({required String discussionId, required String userId, required int type, required String messageContent, String? stickerId, File? image}) async {
     CollectionReference ref = firestoreCollectionReference();
     String messageId = ref.doc().id;
-    Message newM = Message(sendDatetime: Timestamp.now(), userId: userId, messageId: messageId, discussionId: discussionId, type: type, messageContent: messageContent, imgUrl: imgUrl, stickerId: stickerId);
+    String imageUrl = "";
+    if(image!=null && type==1){
+      await CloudStorage.uploadFile(image, "imagesmessages/"+discussionId+"/"+messageId+".png");
+      imageUrl = await FirebaseStorage.instance.ref("imagesmessages/"+discussionId+"/"+messageId+".png").getDownloadURL();
+    }
+    Message newM = Message(sendDatetime: Timestamp.now(), userId: userId, messageId: messageId, discussionId: discussionId, type: type, messageContent: messageContent, imgUrl: imageUrl, stickerId: stickerId);
     ref.doc(messageId).set(
       newM.toJson()
     ).then((value) => print("Message Added"))

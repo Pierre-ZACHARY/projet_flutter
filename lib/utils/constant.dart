@@ -51,11 +51,13 @@ class InputDecorationBuilder{
         enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: ColorConstants.primary, width: 2.0), borderRadius: BorderRadius.all(Radius.circular(0))),
         disabledBorder: OutlineInputBorder(borderSide: BorderSide(color: ColorConstants.secondary, width: 2.0), borderRadius: BorderRadius.all(Radius.circular(0))),
         fillColor: ColorConstants.primary,
+        focusColor: ColorConstants.primary,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(0)),
         ),
         labelStyle: TextConstants.defaultPrimary,
-        counterStyle: TextConstants.hintPrimary
+        counterStyle: TextConstants.hintPrimary,
+        floatingLabelStyle: TextConstants.defaultPrimary,
     );
   }
 
@@ -70,7 +72,9 @@ class InputDecorationBuilder{
         fillColor: primaryColor ?? _decoration.fillColor,
         labelStyle: _decoration.labelStyle,
         counterStyle: _decoration.counterStyle,
-        labelText: label ?? _decoration.labelText);
+        labelText: label ?? _decoration.labelText,
+        focusColor: primaryColor ?? _decoration.focusColor
+   );
 
 
     return this;
