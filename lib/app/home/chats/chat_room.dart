@@ -1,8 +1,11 @@
 
 
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:projet_flutter/modele/Discussion.dart';
 import 'package:projet_flutter/modele/Message.dart';
 import 'package:projet_flutter/modele/UserInfo.dart';
@@ -28,11 +31,23 @@ class _ChatRoomState extends State<ChatRoom>{
 
   Future<void> sendMsg() async{
     String text = sendMessageController.text;
-    if(text!=""){
+    if(text.replaceAll(" ", "").isNotEmpty){
       DocumentReference<Discussion> ref = Discussion.getDiscussionReference(widget.discussionId);
       DocumentSnapshot<Discussion> snapshot = await ref.get();
       Discussion discussion = snapshot.data()!;
-      discussion.sendMessageFromCurrentUser(text);
+      await discussion.sendMessageFromCurrentUser(text);
+      sendMessageController.text = "";
+    }
+  }
+
+  Future<void> sendImg() async{
+    final ImagePicker _picker = ImagePicker();
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if(image != null){
+      DocumentReference<Discussion> ref = Discussion.getDiscussionReference(widget.discussionId);
+      DocumentSnapshot<Discussion> snapshot = await ref.get();
+      Discussion discussion = snapshot.data()!;
+      await discussion.sendImageFromCurrentUser(File(image.path));
     }
   }
 
@@ -60,6 +75,8 @@ class _ChatRoomState extends State<ChatRoom>{
             }
             Userinfo userinfo = UserinfoSnapshot.data!.data()!;
             bool isCurrentUser = userinfo.uid == FirebaseAuth.instance.currentUser!.uid;
+
+            // TODO on veut pouvoir edit ( si c'est du text donc type = 0 ) / delete un message ( en restant appuyer dessus ça ouvre un menu deroulant par exemple ? )
             return ListTile(
               contentPadding: EdgeInsets.all(0),
               // TODO mettre en subtitle les personnes qui ont vu les messages dans la liste "lastMessageSeen" de discussion
@@ -73,24 +90,34 @@ class _ChatRoomState extends State<ChatRoom>{
                       color: (!isCurrentUser ? ColorConstants.backgroundHighlight : ColorConstants.primaryHighlight),
                       borderRadius: const BorderRadius.all(Radius.circular(20))
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: Row(
-                        children: [
-                          !isCurrentUser ? userinfo.getCircleAvatar() : const Text(""),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                                crossAxisAlignment: !isCurrentUser ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-                                children: [
-                                Text(userinfo.displayName, style: !isCurrentUser ? TextConstants.hintPrimary : TextConstants.hintSecondary),
-                                Text(msg.messageContent, style: !isCurrentUser ? TextConstants.defaultPrimary : TextConstants.defaultSecondary),
-                              ],
-                            ),
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(4.0),
+                          child: Row(
+                            children: [
+                              !isCurrentUser ? userinfo.getCircleAvatar() : const Text(""),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                    crossAxisAlignment: !isCurrentUser ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+                                    children: [
+                                    Text(userinfo.displayName, style: !isCurrentUser ? TextConstants.hintPrimary : TextConstants.hintSecondary),
+                                    msg.type == 0 ? Text(msg.messageContent, style: !isCurrentUser ? TextConstants.defaultPrimary : TextConstants.defaultSecondary) : Row(),
+                                  ],
+                                ),
+                              ),
+                              isCurrentUser ? userinfo.getCircleAvatar() : const Text(""),
+                            ],
                           ),
-                          isCurrentUser ? userinfo.getCircleAvatar() : const Text(""),
-                        ],
-                      ),
+                        ),
+                        msg.type == 1 ? ClipRRect(
+                          borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
+                          child: Image(
+                              width:(MediaQuery.of(context).size.width*1)/2,
+                              image:NetworkImage(msg.imgUrl!)),
+                        ) : Row(),
+                      ],
                     ),
                   ),
                 ],
@@ -105,64 +132,79 @@ class _ChatRoomState extends State<ChatRoom>{
   @override
   Widget build(BuildContext context) {
     final stream = Discussion.getDiscussionStream(widget.discussionId);
-    return StreamBuilder<DocumentSnapshot<Discussion>>(
-        stream: stream,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError || !snapshot.hasData || snapshot.data!.data() == null) {
-            return const Text('Something went wrong', style: TextConstants.titlePrimary);
-          }
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+        child: StreamBuilder<DocumentSnapshot<Discussion>>(
+          stream: stream,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError || !snapshot.hasData || snapshot.data!.data() == null) {
+              return const Text('Something went wrong', style: TextConstants.titlePrimary);
+            }
 
-          Discussion discussion = snapshot.data!.data()!;
-          return Scaffold(
-            backgroundColor: ColorConstants.background,
-            appBar: AppBar(
-              backgroundColor: ColorConstants.backgroundHighlight,
-              title: Row(
-                children: [
-                  discussion.getDiscussionCircleAvatar(),
-                  Expanded(child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: discussion.getTitleTextWidget(),
-                  ))
-                  // TODO logo param qui envoie sur vue pour param la discussion : changer son nom / ajouter un utilisateur ( voir comment j'ai fait la recherche d'utilisateur dans chat_page )
-                ],
-              ),
-            ),
-            body: Column(
+            Discussion discussion = snapshot.data!.data()!;
+            return Scaffold(
+              backgroundColor: ColorConstants.background,
+              appBar: AppBar(
+                backgroundColor: ColorConstants.backgroundHighlight,
+                title: Row(
                   children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: ListView.builder(
-                          scrollDirection: Axis.vertical,
-                          reverse: true,
-                          itemCount: discussion.messagesIds.length,
-                          itemBuilder: (context, index) => _buildMessageTile(context, discussion.messagesIds[index]),
-                        ),
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        // TODO bouton/icon pour envoyer des images (fonction modele = discussion.sendImageFromCurrentUser( file ) )
-                        Expanded(
-                          child: TextField(
-                            controller: sendMessageController,
-                            onEditingComplete:() => sendMsg(),
-                            decoration: InputDecorationBuilder().addLabel("Message...").setPrimaryColor(ColorConstants.primary).build(),
+                    discussion.getDiscussionCircleAvatar(),
+                    Expanded(child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: discussion.getTitleTextWidget(),
+                    ))
+                    // TODO logo param qui envoie sur vue pour param la discussion : changer son nom / ajouter un utilisateur ( voir comment j'ai fait la recherche d'utilisateur dans chat_page )
+                  ],
+                ),
+              ),
+              body: Column(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          child: ListView.builder(
+                            scrollDirection: Axis.vertical,
+                            reverse: true,
+                            itemCount: discussion.messagesIds.length,
+                            itemBuilder: (context, index) => _buildMessageTile(context, discussion.messagesIds[index]),
                           ),
                         ),
-                      ],
-                    )
-                  ],
+                      ),
+                      Row(
+                        children: [
+                          // TODO bouton/icon pour envoyer des images (fonction modele = discussion.sendImageFromCurrentUser( file ) )
+                          IconButton(
+                            icon: const Icon(Icons.image, color: ColorConstants.primary,),
+                            onPressed: () => sendImg(),
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: sendMessageController,
+                              onEditingComplete:() => sendMsg(),
+                              style: TextConstants.defaultPrimary,
+                              decoration: InputDecoration(
+                                hintText: "Message...",
+                                  hintStyle: TextConstants.defaultPrimary
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.send, color: ColorConstants.primary,),
+                            onPressed: () => sendMsg(),
+                          ),
+                        ],
+                      )
+                    ],
 
 
-            ),
-          );
-        }
-      );
+              ),
+            );
+          }
+        ),
+    );
   }
 
 }

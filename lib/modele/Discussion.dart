@@ -38,14 +38,14 @@ class Discussion {
     };
   }
 
-  void sendMessageFromCurrentUser(String messageContent){
+  Future<void> sendMessageFromCurrentUser(String messageContent) async {
     DocumentReference<Discussion> ref = getDiscussionReference(discussion_id);
     String userId = FirebaseAuth.instance.currentUser!.uid;
-    Message msg = Message.newMessage(userId: userId, discussionId: discussion_id, type: 0, messageContent: messageContent)!;
+    Message? msg = await Message.newMessage(userId: userId, discussionId: discussion_id, type: 0, messageContent: messageContent);
     FirebaseFirestore.instance.runTransaction((transaction) async {
       DocumentSnapshot<Discussion> freshSnap = await transaction.get(ref);
       List<dynamic> messagesIds = freshSnap.data()!.messagesIds;
-      messagesIds.insert(0, msg.messageId);
+      messagesIds.insert(0, msg!.messageId);
       transaction.update(freshSnap.reference, {
         'messagesIds': messagesIds,
       });
@@ -57,12 +57,11 @@ class Discussion {
   Future<void> sendImageFromCurrentUser(File imageFile) async{
     String userid = FirebaseAuth.instance.currentUser!.uid;
     DocumentReference<Discussion> ref = getDiscussionReference(discussion_id);
-    Message msg = Message.newMessage(userId: userid, discussionId: discussion_id, type: 1, messageContent: "Contient image", imgUrl: "")!;
-    await CloudStorage.uploadFile(imageFile, "imagesmessages/"+discussion_id+"/"+msg.messageId+".png");
+    Message? msg = await Message.newMessage(userId: userid, discussionId: discussion_id, type: 1, messageContent: "Contient image", image: imageFile);
     FirebaseFirestore.instance.runTransaction((transaction) async {
       DocumentSnapshot<Discussion> freshSnap = await transaction.get(ref);
       List<dynamic> messagesIds = freshSnap.data()!.messagesIds;
-      messagesIds.insert(0, msg.messageId);
+      messagesIds.insert(0, msg!.messageId);
       transaction.update(freshSnap.reference, {
         'messagesIds': messagesIds,
       });
