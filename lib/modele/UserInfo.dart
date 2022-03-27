@@ -12,16 +12,18 @@ class Userinfo{
   final String displayName;
   final String imgUrl;
   final bool active;
-  Userinfo({required this.uid, required this.displayName, required this.imgUrl, required this.active});
+  final bool notif;
+  Userinfo({required this.uid, required this.displayName, required this.imgUrl, required this.active, required this.notif});
 
 
-  Userinfo.fromJson(Map<String, Object?> json) : this(uid: json['uid']! as String, displayName: json['displayName']! as String, imgUrl: json['imgUrl']! as String, active: json['active']! as bool );
+  Userinfo.fromJson(Map<String, Object?> json) : this(uid: json['uid']! as String, displayName: json['displayName']! as String, imgUrl: json['imgUrl']! as String, active: json['active']! as bool, notif: json['notif']! as bool );
   Map<String, Object?> toJson() {
     return {
       'uid': uid,
       'displayName': displayName,
       'imgUrl': imgUrl,
       'active': active,
+      'notif': notif
     };
   }
 
@@ -82,7 +84,19 @@ class Userinfo{
     return users
         .doc(uid)
         .set(json)
-        .then((value) => print("User Added"))
+        .then((value) => print("User found"))
+        .catchError((error) => print("Failed to add user: $error"));
+  }
+
+  Future<void> updateActiveValue(bool active){
+    CollectionReference users = FirebaseFirestore.instance.collection('users');
+    // Call the user's CollectionReference to add a new user
+    Map<String, Object?> json = toJson();
+    json['active'] = active;
+    return users
+        .doc(uid)
+        .set(json)
+        .then((value) => print("User found"))
         .catchError((error) => print("Failed to add user: $error"));
   }
 }
