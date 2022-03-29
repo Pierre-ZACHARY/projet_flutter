@@ -223,8 +223,8 @@ class _RegisterPageState extends State<RegisterPage> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Color(0xFF1d9586),
-                        Color(0xFF154da4),
+                        ColorConstants.backgroundHighlight,
+                        ColorConstants.background,
                       ],
                       stops: [0, 1],
                     )

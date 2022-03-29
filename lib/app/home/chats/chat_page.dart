@@ -34,11 +34,11 @@ class _ChatPageState extends State<ChatPage>{
     return StreamBuilder<DocumentSnapshot<Discussion>>(
       stream: discussionStream,
       builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Text("");
+        }
         if (snapshot.hasError || !snapshot.hasData || snapshot.data!.data() == null) {
           return const Text('Something went wrong', style: TextConstants.titlePrimary);
-        }
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Text("Loading", style: TextConstants.titlePrimary);
         }
         Discussion discussion = snapshot.data!.data()!;
 
@@ -119,11 +119,11 @@ class _ChatPageState extends State<ChatPage>{
                 child: StreamBuilder<DocumentSnapshot<DiscussionsList>>(
                   stream: userDiscussions,
                   builder: (BuildContext context, AsyncSnapshot<DocumentSnapshot<DiscussionsList>> snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
                     if (snapshot.hasError) {
                       return const Text('Something went wrong', style: TextConstants.titlePrimary);
-                    }
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Text("Loading", style: TextConstants.titlePrimary);
                     }
                     if (snapshot.hasData && snapshot.data!.data() != null) {
                       return ListView.builder(

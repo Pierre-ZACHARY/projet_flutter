@@ -130,7 +130,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
     return ElevatedButton(
       onPressed: () => Login(emailController.text, passwordController.text),
       style: ButtonStyle(
-        backgroundColor: MaterialStateProperty.all<Color>(Colors.white),
+        backgroundColor: MaterialStateProperty.all<Color>(ColorConstants.backgroundHighlight),
         padding:  MaterialStateProperty.all<EdgeInsetsGeometry>(const EdgeInsets.all(15.0)),
         shape: MaterialStateProperty.all<RoundedRectangleBorder>(
           RoundedRectangleBorder(
@@ -141,7 +141,7 @@ class _ConnexionPageState extends State<ConnexionPage> {
       child: const Text(
         "Log-in",
         style: TextStyle(
-            color: Color(0xFF154da4),
+            color: ColorConstants.primary,
             letterSpacing: 2.0,
             fontSize: 18.0,
             fontWeight: FontWeight.bold,
@@ -213,8 +213,8 @@ class _ConnexionPageState extends State<ConnexionPage> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Color(0xFF1d9586),
-                        Color(0xFF154da4),
+                        ColorConstants.backgroundHighlight,
+                        ColorConstants.background,
                       ],
                       stops: [0, 1],
                     )

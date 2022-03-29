@@ -131,7 +131,7 @@ class Discussion {
           builder: (context, snapshot)
           {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Text("Loading", style: TextConstants.titlePrimary);
+              return const Text("", style: TextConstants.titlePrimary);
             }
             if (snapshot.hasError || !snapshot.hasData ||
                 snapshot.data!.data() == null) {
@@ -170,7 +170,7 @@ class Discussion {
           builder: (context, snapshot)
       {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Text("Loading", style: TextConstants.titlePrimary);
+          return const Text("");
         }
         if (snapshot.hasError || !snapshot.hasData ||
             snapshot.data!.data() == null) {

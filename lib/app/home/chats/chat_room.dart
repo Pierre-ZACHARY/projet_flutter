@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:projet_flutter/app/home/chats/chat_room_param.dart';
 import 'package:projet_flutter/modele/Discussion.dart';
 import 'package:projet_flutter/modele/Message.dart';
 import 'package:projet_flutter/modele/UserInfo.dart';
@@ -57,7 +58,7 @@ class _ChatRoomState extends State<ChatRoom>{
       stream: stream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Text("");
         }
         if (snapshot.hasError || !snapshot.hasData || snapshot.data!.data() == null) {
           return const Text('Something went wrong', style: TextConstants.defaultPrimary);
@@ -68,7 +69,7 @@ class _ChatRoomState extends State<ChatRoom>{
           stream: userinfoStream,
           builder: (context, UserinfoSnapshot) {
             if (UserinfoSnapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return const Text("");
             }
             if (UserinfoSnapshot.hasError || !UserinfoSnapshot.hasData || UserinfoSnapshot.data!.data() == null) {
               return const Text('Something went wrong', style: TextConstants.defaultPrimary);
@@ -156,8 +157,12 @@ class _ChatRoomState extends State<ChatRoom>{
                     Expanded(child: Padding(
                       padding: const EdgeInsets.all(8),
                       child: discussion.getTitleTextWidget(),
-                    ))
-                    // TODO logo param qui envoie sur vue pour param la discussion : changer son nom / ajouter un utilisateur ( voir comment j'ai fait la recherche d'utilisateur dans chat_page )
+                    )),
+                    IconButton(
+                      icon: const Icon(Icons.settings),
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ChatRoomParam(discussionId: widget.discussionId))),
+
+                    )
                   ],
                 ),
               ),
@@ -166,6 +171,7 @@ class _ChatRoomState extends State<ChatRoom>{
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          // TODO lazy load la listview ( faut load seulement les messages tiles des messages visibles et pas tous les messages tiles )
                           child: ListView.builder(
                             scrollDirection: Axis.vertical,
                             reverse: true,
