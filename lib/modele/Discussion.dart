@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:projet_flutter/app/home/chats/chat_room.dart';
 import 'package:projet_flutter/main.dart';
 import 'package:projet_flutter/modele/DiscussionsList.dart';
 import 'package:projet_flutter/modele/Message.dart';
@@ -19,14 +20,18 @@ class Discussion {
   final List<dynamic> usersIds;
   final Map<dynamic, dynamic> lastMessageSeenByUsers;
   final int type; // 0 = discussion entre 2 utilisateurs, 1 = discussion de groupe
+  final String? imgUrl; // image du groupe si type 1
+  final String? groupTitle; // titre du groupe si type 1
 
-  Discussion({required this.discussion_id, required this.type, required this.lastMessageSeenByUsers, required this.messagesIds, required this.usersIds});
+  Discussion({required this.imgUrl, required this.groupTitle ,required this.discussion_id, required this.type, required this.lastMessageSeenByUsers, required this.messagesIds, required this.usersIds});
   Discussion.fromJson(Map<String, Object?> json) : this(
       discussion_id: json['discussion_id']! as String,
       messagesIds: json['messagesIds']! as List<dynamic>,
       usersIds: json['usersIds']! as List<dynamic>,
       type: json['type']! as int,
       lastMessageSeenByUsers: json['lastMessageSeenByUsers']! as Map<dynamic, dynamic>,
+      groupTitle: json['groupTitle'] as String?,
+      imgUrl: json['imgUrl'] as String?,
   );
   Map<String, Object?> toJson() {
     return {
@@ -35,6 +40,8 @@ class Discussion {
       'usersIds': usersIds,
       'type': type,
       'lastMessageSeenByUsers': lastMessageSeenByUsers,
+      'groupTitle': groupTitle,
+      'imgUrl': imgUrl,
     };
   }
 
@@ -57,7 +64,7 @@ class Discussion {
     }
   }
 
-  Future<void> sendMessageFromCurrentUser(String messageContent) async {
+  Future<void> sendMessageFromCurrentUser(String messageContent, {int type=0} ) async {
     DocumentReference<Discussion> ref = getDiscussionReference(discussion_id);
     String userId = FirebaseAuth.instance.currentUser!.uid;
     Message? msg = await Message.newMessage(userId: userId, discussionId: discussion_id, type: 0, messageContent: messageContent);
@@ -116,7 +123,6 @@ class Discussion {
     return messagesIds.indexOf(msgId);
   }
 
-
   Widget getDiscussionCircleAvatar(){
     //renvoi le titre de la discussion
     if(usersIds.length == 2) {
@@ -147,18 +153,18 @@ class Discussion {
           });
     }
     else{
-      // TODO le cas où c'est une conv de groupe on veut qu'elle ait une image de profile modifiable
-      return const CircleAvatar(
-                    backgroundColor: Colors.white,
-                    backgroundImage: AssetImage('assets/images/default-profile-picture.png'),
-                  );
+      return CircleAvatar(
+        backgroundColor: Colors.white,
+        backgroundImage: const AssetImage('assets/images/default-profile-picture.png'),
+        foregroundImage: imgUrl != null ? NetworkImage(imgUrl!) : null,
+      );
     }
 
   }
 
   Widget getTitleTextWidget(){
     //renvoi le titre de la discussion
-    if(usersIds.length == 2) {
+
       // le cas où c'est une conversation entre 2 utilisateurs : on veut afficher le pseudo / l'image de l'autre utilisateur
       String currentUid = FirebaseAuth.instance.currentUser!.uid;
       String otherUid = usersIds[0] == currentUid ? usersIds[1] : usersIds[0];
@@ -176,16 +182,72 @@ class Discussion {
             snapshot.data!.data() == null) {
           return const Text('Something went wrong', style: TextConstants.titlePrimary);
         }
-
         Userinfo otherUserInfo = snapshot.data!.data()!;
-        return Text(otherUserInfo.displayName, style: TextConstants.defaultPrimary,);
+        String titre;
+        if(type == 0) {
+          titre = otherUserInfo.displayName;
+        }
+        else{
+          titre = groupTitle ?? "Group Discussion";
+        }
+        return Text(titre, style: TextConstants.defaultPrimary,);
       });
+
+  }
+
+  Future<void> addUser(BuildContext context, String userId) async{
+    if(type==0){
+      List newUsersIds = usersIds;
+      newUsersIds.add(userId);
+      String discussionId = await openDiscussion(newUsersIds);
+      Userinfo uinfo = await Userinfo.getUserSnapshotById(userId);
+      Discussion newDisc = await getDiscussionSnapshotById(discussionId);
+      newDisc.sendMessageFromCurrentUser("a ajouté "+uinfo.displayName+" au groupe", type: 3);
+      Navigator.push(context, MaterialPageRoute(builder: (context) => ChatRoom(discussionId: discussionId)));
     }
     else{
-      // TODO le cas où c'est une conv de groupe on veut qu'elle ait un titre modifiable
-      return const Text("Titre");
+      // si c'est déjà une discussion de groupe, pas besoin d'en créer une nouvelle
+      DocumentReference<Discussion> ref = getDiscussionReference(discussion_id);
+      FirebaseFirestore.instance.runTransaction((transaction) async {
+        DocumentSnapshot<Discussion> freshSnap = await transaction.get(ref);
+        List<dynamic> newusersIds = freshSnap.data()!.usersIds;
+        if(!newusersIds.contains(userId)) {
+          newusersIds.add(userId);
+          Userinfo uinfo = await Userinfo.getUserSnapshotById(userId);
+          sendMessageFromCurrentUser("a ajouté "+uinfo.displayName+" au groupe", type: 3);
+        }
+        transaction.update(freshSnap.reference, {
+          'usersIds': newusersIds,
+        });
+      });
     }
+  }
 
+  Future<void> changeImage(File imageFile) async{
+    DocumentReference<Discussion> ref = getDiscussionReference(discussion_id);
+    sendMessageFromCurrentUser("a modifié l'image du groupe", type: 3);
+    FirebaseFirestore.instance.runTransaction((transaction) async {
+      DocumentSnapshot<Discussion> freshSnap = await transaction.get(ref);
+      transaction.update(freshSnap.reference, {
+        'imgUrl': imgUrl,
+      });
+    });
+  }
+
+  Future<void> changeTitle(String newTitle) async{
+    DocumentReference<Discussion> ref = getDiscussionReference(discussion_id);
+    sendMessageFromCurrentUser("a modifié le nom du groupe en : "+newTitle, type: 3);
+    FirebaseFirestore.instance.runTransaction((transaction) async {
+      DocumentSnapshot<Discussion> freshSnap = await transaction.get(ref);
+      transaction.update(freshSnap.reference, {
+        'groupTitle': newTitle,
+      });
+    });
+  }
+
+  Future<void> removeDiscussionFromCurrentUserList() async{
+    DiscussionsList discussionsList = await DiscussionsList.getDiscussionListSnapshotById(FirebaseAuth.instance.currentUser!.uid);
+    await discussionsList.removeDiscussion(discussion_id);
   }
 
   static CollectionReference firestoreCollectionReference(){
@@ -208,7 +270,14 @@ class Discussion {
     return ref;
   }
 
-  static Future<void> openDiscussion(List<String> usersIds) async {
+  static Future<Discussion> getDiscussionSnapshotById(String discId) async {
+    DocumentReference<Discussion> discRef = await getDiscussionReference(discId);
+    DocumentSnapshot<Discussion> snapshot = await discRef.get();
+    Discussion uinfo = snapshot.data()!;
+    return uinfo;
+  }
+
+  static Future<String> openDiscussion(List<dynamic> usersIds) async {
     // ouvre une nouvelle discussion entre les différents utilisateurs --> la place en première position de leur file si elle est déjà ouverte ( utile pour refresh )
     print(usersIds);
     CollectionReference discussionRef = firestoreCollectionReference();
@@ -236,18 +305,17 @@ class Discussion {
       int type = 0;
       if(usersIds.length > 2){
         type = 1;
-        // TODO Dans ce cas on peut vouloir attribuer un id aléatoire à la discussion, sinon ça voudrait qu'un même groupe d'utilisateurs ne peut créer qu'un seul groupe pour eux ( de plus l'id ne changera pas à l'ajout de nouveaux utilisateurs de toute façon )
       }
       discussion = Discussion(
-          discussion_id: discussionId, messagesIds: [], usersIds: usersIds, type: type, lastMessageSeenByUsers: {});
+          discussion_id: discussionId, messagesIds: [], usersIds: usersIds, type: type, lastMessageSeenByUsers: {}, imgUrl: null, groupTitle: null);
       discussionRef.doc(discussionId).set(discussion.toJson())
           .then((value) => print("discussion open"))
           .catchError((error) => print("Failed to open discussion: $error"));
     }
-
     // enfin, on add la discussion à tous les utilisateurs
     await discussion.setDiscussionInFirstPosition();
-
+    return discussionId;
   }
+
 
 }

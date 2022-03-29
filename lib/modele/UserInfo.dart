@@ -38,10 +38,29 @@ class Userinfo{
   }
 
   static Stream<DocumentSnapshot<Userinfo>> getUserDocumentStream(String uid){
-    return FirebaseFirestore.instance.collection('users').doc(uid).withConverter<Userinfo>(
+    return firestoreCollectionReference().doc(uid).withConverter<Userinfo>(
       fromFirestore: (snapshot, _) => Userinfo.fromJson(snapshot.data()!),
       toFirestore: (bandnames, _) => bandnames.toJson(),
     ).snapshots();
+  }
+
+  static CollectionReference firestoreCollectionReference(){
+    return FirebaseFirestore.instance.collection('users');
+  }
+  static DocumentReference<Userinfo> getUserDocumentRef(String uid){
+    CollectionReference userinfoRef = firestoreCollectionReference();
+    DocumentReference<Userinfo> ref = userinfoRef.doc(uid).withConverter<Userinfo>(
+      fromFirestore: (snapshot, _) => Userinfo.fromJson(snapshot.data()!),
+      toFirestore: (userinfo, _) => userinfo.toJson(),
+    );
+    return ref;
+  }
+
+  static Future<Userinfo> getUserSnapshotById(String uid) async {
+    DocumentReference<Userinfo> otherUid = await getUserDocumentRef(uid);
+    DocumentSnapshot<Userinfo> snapshot = await otherUid.get();
+    Userinfo uinfo = snapshot.data()!;
+    return uinfo;
   }
 
   static Query<Userinfo> searchUser(String displayName){

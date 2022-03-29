@@ -146,7 +146,9 @@ class _ChatRoomState extends State<ChatRoom>{
             }
 
             Discussion discussion = snapshot.data!.data()!;
-            discussion.updateLastMessageSeenForCurrentUser(discussion.messagesIds[0]);
+            if(discussion.messagesIds.isNotEmpty){
+              discussion.updateLastMessageSeenForCurrentUser(discussion.messagesIds[0]);
+            }
             return Scaffold(
               backgroundColor: ColorConstants.background,
               appBar: AppBar(

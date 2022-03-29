@@ -19,11 +19,28 @@ class DiscussionsList{
     };
   }
 
+
   static Stream<DocumentSnapshot<DiscussionsList>> getUserDiscussionsList(String uid){
-    return FirebaseFirestore.instance.collection(collectionRef).doc(uid).withConverter<DiscussionsList>(
+    return discussionsListRef().doc(uid).withConverter<DiscussionsList>(
       fromFirestore: (snapshot, _) => DiscussionsList.fromJson(snapshot.data()!),
       toFirestore: (bandnames, _) => bandnames.toJson(),
     ).snapshots();
+  }
+
+  static DocumentReference<DiscussionsList> getDiscussionListReference(String uid){
+    CollectionReference discussionRef = discussionsListRef();
+    DocumentReference<DiscussionsList> ref = discussionRef.doc(uid).withConverter<DiscussionsList>(
+      fromFirestore: (snapshot, _) => DiscussionsList.fromJson(snapshot.data()!),
+      toFirestore: (discussion, _) => discussion.toJson(),
+    );
+    return ref;
+  }
+
+  static Future<DiscussionsList> getDiscussionListSnapshotById(String uid) async {
+    DocumentReference<DiscussionsList> discRef = await getDiscussionListReference(uid);
+    DocumentSnapshot<DiscussionsList> snapshot = await discRef.get();
+    DiscussionsList discList = snapshot.data()!;
+    return discList;
   }
 
   Future<void> addDiscussion(String discussionId){

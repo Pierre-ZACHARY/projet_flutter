@@ -4,7 +4,9 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:projet_flutter/modele/Discussion.dart';
 import 'package:projet_flutter/utils/cloudStorageUtils.dart';
 
 class Message{
@@ -60,9 +62,32 @@ class Message{
     return newM;
   }
 
+  Future<void> editMessage({required String messageContent})async {
+    DocumentReference<Message> ref = getMessageReference(messageId);
+    FirebaseFirestore.instance.runTransaction((transaction) async {
+      DocumentSnapshot<Message> freshSnap = await transaction.get(ref);
+      transaction.update(freshSnap.reference, {
+        'messageContent': messageContent,
+      });
+    });
+  }
+
+  Future<void> deleteMessage() async {
+    DocumentReference<Discussion> ref = Discussion.getDiscussionReference(discussionId);
+    FirebaseFirestore.instance.runTransaction((transaction) async {
+      DocumentSnapshot<Discussion> freshSnap = await transaction.get(ref);
+      List<dynamic> discMessagesIds = freshSnap.data()!.messagesIds;
+      discMessagesIds.remove(messageId);
+      transaction.update(freshSnap.reference, {
+        'messagesIds': discMessagesIds,
+      });
+    });
+  }
+
   static CollectionReference firestoreCollectionReference(){
     return FirebaseFirestore.instance.collection('messages');
   }
+
 
   static DocumentReference<Message> getMessageReference(String messageId){
     CollectionReference discussionRef = firestoreCollectionReference();
