@@ -175,7 +175,6 @@ class _ChatRoomState extends State<ChatRoom>{
                       ),
                       Row(
                         children: [
-                          // TODO bouton/icon pour envoyer des images (fonction modele = discussion.sendImageFromCurrentUser( file ) )
                           IconButton(
                             icon: const Icon(Icons.image, color: ColorConstants.primary,),
                             onPressed: () => sendImg(),

@@ -38,6 +38,25 @@ class Discussion {
     };
   }
 
+  Future<void> setDiscussionInFirstPosition() async{
+    for(String userid in usersIds){
+      Stream<DocumentSnapshot<DiscussionsList>> userDiscussions = DiscussionsList
+          .getUserDiscussionsList(userid);
+      DocumentSnapshot<DiscussionsList> discussionListSnapshot = await userDiscussions.first;
+      if (discussionListSnapshot.data() != null) {
+        DiscussionsList discussionList = discussionListSnapshot.data()!;
+        discussionList.addDiscussion(discussion_id);
+      }
+      else{
+        DiscussionsList newDiscussionList = DiscussionsList(uid: userid, discussionsIds: [discussion_id],);
+        CollectionReference discussionListref = DiscussionsList.discussionsListRef();
+        discussionListref.doc(userid).set(newDiscussionList.toJson())
+            .then((value) => print("discussionList created"))
+            .catchError((error) => print("Failed to create discussionList: $error"));
+      }
+    }
+  }
+
   Future<void> sendMessageFromCurrentUser(String messageContent) async {
     DocumentReference<Discussion> ref = getDiscussionReference(discussion_id);
     String userId = FirebaseAuth.instance.currentUser!.uid;
@@ -50,7 +69,7 @@ class Discussion {
         'messagesIds': messagesIds,
       });
     });
-    // TODO mettre la discussion en première position chez tous les utilisateurs
+    await setDiscussionInFirstPosition();
     // TODO send push notif
   }
 
@@ -66,7 +85,7 @@ class Discussion {
         'messagesIds': messagesIds,
       });
     });
-    // TODO mettre la discussion en première position chez tous les utilisateurs
+    await setDiscussionInFirstPosition();
     // TODO send push notif
   }
 
@@ -200,9 +219,11 @@ class Discussion {
     // TODO on veut hash discussionId pour en réduire la taille ( une liste d'utilisateur = un id, toujours le même pour une même liste, mais pas besoin de pouvoir retrouver cette liste à partir de l'id )
     Stream<DocumentSnapshot<Discussion>> discussionStream = getDiscussionStream(discussionId);
     DocumentSnapshot<Discussion> snapshot = await discussionStream.first;
+    Discussion discussion;
     if (snapshot.data() != null) {
       print(snapshot.data());
-      Map<String, Object?> json = snapshot.data()!.toJson();
+      discussion = snapshot.data()!;
+      Map<String, Object?> json = discussion.toJson();
       print(json);
       json['usersIds'] = usersIds;
       json['discussion_id'] = discussionId;
@@ -217,29 +238,16 @@ class Discussion {
         type = 1;
         // TODO Dans ce cas on peut vouloir attribuer un id aléatoire à la discussion, sinon ça voudrait qu'un même groupe d'utilisateurs ne peut créer qu'un seul groupe pour eux ( de plus l'id ne changera pas à l'ajout de nouveaux utilisateurs de toute façon )
       }
-      Discussion newDisc = Discussion(
+      discussion = Discussion(
           discussion_id: discussionId, messagesIds: [], usersIds: usersIds, type: type, lastMessageSeenByUsers: {});
-      discussionRef.doc(discussionId).set(newDisc.toJson())
+      discussionRef.doc(discussionId).set(discussion.toJson())
           .then((value) => print("discussion open"))
           .catchError((error) => print("Failed to open discussion: $error"));
     }
 
-    // enfin, on add la discussion à l'utilisateur courant
-    Stream<DocumentSnapshot<DiscussionsList>> userDiscussions = DiscussionsList
-        .getUserDiscussionsList(FirebaseAuth.instance.currentUser!.uid);
-    DocumentSnapshot<DiscussionsList> discussionListSnapshot = await userDiscussions.first;
-    if (discussionListSnapshot.data() != null) {
-      DiscussionsList discussionList = discussionListSnapshot.data()!;
-      discussionList.addDiscussion(discussionId);
-    }
-    else{
-      DiscussionsList newDiscussionList = DiscussionsList(uid: FirebaseAuth.instance.currentUser!.uid, discussionsIds: [discussionId],);
-      CollectionReference discussionListref = DiscussionsList.discussionsListRef();
-      discussionListref.doc(FirebaseAuth.instance.currentUser!.uid).set(newDiscussionList.toJson())
-          .then((value) => print("discussionList created"))
-          .catchError((error) => print("Failed to create discussionList: $error"));
-      // /!\ ouvrir une discussion sur l'utilisateur courant ne l'ouvre pas forcement chez les autres utilisateurs : faire attention à ça quand envoi de messages
-    }
+    // enfin, on add la discussion à tous les utilisateurs
+    await discussion.setDiscussionInFirstPosition();
+
   }
 
 }

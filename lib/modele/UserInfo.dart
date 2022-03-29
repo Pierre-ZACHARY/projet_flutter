@@ -15,7 +15,11 @@ class Userinfo{
   Userinfo({required this.uid, required this.displayName, required this.imgUrl, required this.active});
 
 
-  Userinfo.fromJson(Map<String, Object?> json) : this(uid: json['uid']! as String, displayName: json['displayName']! as String, imgUrl: json['imgUrl']! as String, active: json['active']! as bool );
+  Userinfo.fromJson(Map<String, Object?> json) : this(
+      uid: json['uid']! as String,
+      displayName: json['displayName']! as String,
+      imgUrl: json['imgUrl']! as String,
+      active: json['active']! as bool );
   Map<String, Object?> toJson() {
     return {
       'uid': uid,
