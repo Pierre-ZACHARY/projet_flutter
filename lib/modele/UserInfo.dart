@@ -86,7 +86,19 @@ class Userinfo{
     return users
         .doc(uid)
         .set(json)
-        .then((value) => print("User Added"))
+        .then((value) => print("User found"))
+        .catchError((error) => print("Failed to add user: $error"));
+  }
+
+  Future<void> updateActiveValue(bool active){
+    CollectionReference users = FirebaseFirestore.instance.collection('users');
+    // Call the user's CollectionReference to add a new user
+    Map<String, Object?> json = toJson();
+    json['active'] = active;
+    return users
+        .doc(uid)
+        .set(json)
+        .then((value) => print("User found"))
         .catchError((error) => print("Failed to add user: $error"));
   }
 }

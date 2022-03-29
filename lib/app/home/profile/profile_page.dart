@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:projet_flutter/app/home/profile/settings_page.dart';
 import 'package:projet_flutter/modele/UserInfo.dart';
 import 'package:projet_flutter/utils/authUtils.dart';
 import 'package:projet_flutter/utils/cloudStorageUtils.dart';
@@ -76,134 +77,134 @@ class _ProfilePageState extends State<ProfilePage>{
     return StreamBuilder<DocumentSnapshot>(
         stream: Userinfo.getUserDocumentStream(FirebaseAuth.instance.currentUser!.uid),
         builder: (context, snapshot) {
-          if(snapshot.data == null){
-            return const Text("Loading...");
-          }
-          Userinfo uinfo = snapshot.data!.data()! as Userinfo;
-          pseudoController.text = uinfo.displayName;
-          return GestureDetector(
-            onTap: () => widget.onPseudoEditingComplete(pseudoController, uinfo),
-            child: Scaffold(
-              backgroundColor: ColorConstants.background,
-              body: Padding(
-                padding: const EdgeInsets.fromLTRB(40,20,40,40),
-                child: Column(
-                  children:  [
-                      Column(
-                          children: [
-                            GestureDetector(
-                              onTap: () => {
-                                widget.onProfilePictureTap(uinfo)
-                              },
-                              child: CircleAvatar(
-                                    backgroundColor: Colors.white,
-                                    backgroundImage: const AssetImage('assets/images/default-profile-picture.png'),
-                                    foregroundImage: NetworkImage(uinfo.imgUrl),
-                                    radius: 100,
+        if(snapshot.data == null){
+          return const Text("Loading...");
+        }
+        Userinfo uinfo = snapshot.data!.data()! as Userinfo;
+        pseudoController.text = uinfo.displayName;
+        return GestureDetector(
+          onTap: () => widget.onPseudoEditingComplete(pseudoController, uinfo),
+          child: Scaffold(
+            backgroundColor: ColorConstants.background,
+            body: Padding(
+              padding: const EdgeInsets.fromLTRB(40,20,40,40),
+              child: Column(
+                children:  [
+                    Column(
+                        children: [
+                          GestureDetector(
+                            onTap: () => {
+                              widget.onProfilePictureTap(uinfo)
+                            },
+                            child: CircleAvatar(
+                                  backgroundColor: Colors.white,
+                                  backgroundImage: const AssetImage('assets/images/default-profile-picture.png'),
+                                  foregroundImage: NetworkImage(
+                                      uinfo.imgUrl),
+                                  radius: 100,
+                                ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(0, 20, 0, 20),
+                            child: TextFormField(
+                              style: TextConstants.defaultPrimary,
+                              maxLength: 20,
+                              controller: pseudoController,
+                              onEditingComplete: () => widget.onPseudoEditingComplete(pseudoController, uinfo),
+                              decoration: InputDecorationBuilder().addLabel("Pseudo").setBorderRadius(BorderRadius.circular(20)).build(),
+                              cursorColor: ColorConstants.primaryHighlight,
+                            ),
+                          ),
+
+                        ]
+                      ),
+
+                  const Expanded(
+                      child: Text(""),
+                  ),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: ElevatedButton(
+                            style: ButtonStyle(
+                              backgroundColor: MaterialStateProperty.all(ColorConstants.secondary),
+                            ),
+                            //TODO settings pour activer / désativer le mode public, plus tard settings pour activer / désactiver les push notif
+                            onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (context) => SettingPage())); },
+                            child: const Text("Settings", style: TextConstants.defaultSecondary)),
+                      )
+                    ],
+                  ),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Listener(
+                          onPointerDown: (details) {
+                            _buttonPressed = true;
+                            _increaseCounterWhilePressed();
+                          },
+                          onPointerUp: (details) {
+                            _buttonPressed = false;
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: ColorConstants.backgroundHighlight,
+                              borderRadius: const BorderRadius.all(Radius.circular(5)),
+                              border: Border.all(
+                                style: BorderStyle.none,
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(10.0),
+                            child: Center(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: <Widget>[
+                                  Column(
+                                    children: const [
+                                      Text(
+                                          'Logout',
+                                          textAlign: TextAlign.center,
+                                          style: TextConstants.defaultSecondary
+                                      )
+                                    ],
                                   ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(0, 20, 0, 20),
-                              child: TextFormField(
-                                style: TextConstants.defaultPrimary,
-                                maxLength: 20,
-                                controller: pseudoController,
-                                onEditingComplete: () => widget.onPseudoEditingComplete(pseudoController, uinfo),
-                                decoration: InputDecorationBuilder().addLabel("Pseudo").setBorderRadius(BorderRadius.circular(20)).build(),
-                                cursorColor: ColorConstants.primaryHighlight,
-                              ),
-                            ),
-
-                          ]
-                        ),
-
-                    const Expanded(
-                        child: Text(""),
-                    ),
-                    Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: ElevatedButton(
-                              style: ButtonStyle(
-                                backgroundColor: MaterialStateProperty.all(ColorConstants.secondary),
-                              ),
-                              //TODO settings pour activer / désativer le mode public, plus tard settings pour activer / désactiver les push notif
-                              onPressed: () {  },
-                              child: const Text("Settings", style: TextConstants.defaultSecondary)),
-                        )
-                      ],
-                    ),
-                    Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: Listener(
-                            onPointerDown: (details) {
-                              _buttonPressed = true;
-                              _increaseCounterWhilePressed();
-                            },
-                            onPointerUp: (details) {
-                              _buttonPressed = false;
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: ColorConstants.backgroundHighlight,
-                                borderRadius: const BorderRadius.all(Radius.circular(5)),
-                                border: Border.all(
-                                  style: BorderStyle.none,
-                                ),
-                              ),
-                              padding: const EdgeInsets.all(10.0),
-                              child: Center(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: <Widget>[
-                                    Column(
-                                      children: const [
-                                        Text(
-                                            'Logout',
-                                            textAlign: TextAlign.center,
-                                            style: TextConstants.defaultSecondary
-                                        )
-                                      ],
-                                    ),
-                                    Column(
-                                      children: [
-                                        SizedBox(
-                                          width: _dynamicPadding,
-                                        )
-                                      ],
-                                    ),
-                                    Column(
-                                      children: [
-                                        Visibility(
-                                          child: SizedBox(
-                                            child: CircularProgressIndicator(
-                                              color: Colors.blue,
-                                              value: _counter / _maxCounter,
-                                            ),
-                                            height: 20.0,
-                                            width: 20.0,
+                                  Column(
+                                    children: [
+                                      SizedBox(
+                                        width: _dynamicPadding,
+                                      )
+                                    ],
+                                  ),
+                                  Column(
+                                    children: [
+                                      Visibility(
+                                        child: SizedBox(
+                                          child: CircularProgressIndicator(
+                                            color: Colors.blue,
+                                            value: _counter / _maxCounter,
                                           ),
-                                          visible: _dynamicPadding!=0,
-                                        )
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                                          height: 20.0,
+                                          width: 20.0,
+                                        ),
+                                        visible: _dynamicPadding!=0,
+                                      )
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          );
-        }
-      );
-
+          ),
+        );
+      }
+    );
   }
 
 }

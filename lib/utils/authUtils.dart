@@ -24,6 +24,7 @@ class AuthUtils{
         if (userCredential.additionalUserInfo!.isNewUser) {
           Userinfo userInfo = Userinfo(
               active: true,
+              notif: true,
               uid: user.uid,
               imgUrl: user.photoURL ?? '',
               displayName: user.displayName ?? '');
@@ -64,7 +65,7 @@ class AuthUtils{
           email: email,
           password: password
       );
-      Userinfo userInfo = Userinfo(displayName: displayName ?? email.split("@").first, active: true, uid: userCredential.user!.uid, imgUrl: '', );
+      Userinfo userInfo = Userinfo(displayName: displayName ?? email.split("@").first, active: true, notif: true, uid: userCredential.user!.uid, imgUrl: '', );
       await userInfo.Update();
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
