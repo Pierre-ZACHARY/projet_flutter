@@ -110,7 +110,8 @@ class Discussion {
     String userId = FirebaseAuth.instance.currentUser!.uid;
     String? msgId = lastMessageSeenByUsers[userId];
     if(msgId == null){
-      return 0;
+      // si y'en a pas : il n'a jamais ouvert la discu
+      return messagesIds.length;
     }
     return messagesIds.indexOf(msgId);
   }
@@ -216,7 +217,6 @@ class Discussion {
     for (String uid in usersIds) {
       discussionId += uid;
     }
-    // TODO on veut hash discussionId pour en réduire la taille ( une liste d'utilisateur = un id, toujours le même pour une même liste, mais pas besoin de pouvoir retrouver cette liste à partir de l'id )
     Stream<DocumentSnapshot<Discussion>> discussionStream = getDiscussionStream(discussionId);
     DocumentSnapshot<Discussion> snapshot = await discussionStream.first;
     Discussion discussion;

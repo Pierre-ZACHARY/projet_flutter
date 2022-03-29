@@ -56,7 +56,6 @@ class Message{
     ).then((value) => print("Message Added"))
       .catchError((error) => {
         print("Failed to set message: $error")
-        // TODO faire qlq chose si echec ( jsp )
       });
     return newM;
   }

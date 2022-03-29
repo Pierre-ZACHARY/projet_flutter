@@ -50,7 +50,16 @@ class _ChatPageState extends State<ChatPage>{
               Expanded(child: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: discussion.getTitleTextWidget(),
-              ))
+              )),
+              discussion.numberOfUnseenMessagesForCurrentUser() > 0 ? Container(
+                padding: const EdgeInsets.only(left: 5, right: 5),
+                decoration: const BoxDecoration(
+                  color: ColorConstants.backgroundHighlight,
+                  borderRadius: BorderRadius.all(Radius.circular(20))
+                ),
+                child: Text(discussion.numberOfUnseenMessagesForCurrentUser().toString(),
+                  style: TextConstants.defaultPrimary,),
+              ) : Row(),
             ],
           ),
           onTap: ()=>{
