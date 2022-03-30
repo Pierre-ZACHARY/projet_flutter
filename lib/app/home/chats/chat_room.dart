@@ -1,12 +1,12 @@
-
-
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:projet_flutter/app/home/chats/chat_room_param.dart';
+import 'package:projet_flutter/app/home/chats/cupertino_options.dart';
 import 'package:projet_flutter/modele/Discussion.dart';
 import 'package:projet_flutter/modele/Message.dart';
 import 'package:projet_flutter/modele/UserInfo.dart';
@@ -18,13 +18,15 @@ class ChatRoom extends StatefulWidget{
 
   const ChatRoom({Key? key, required this.discussionId}) : super(key: key);
 
+
   @override
   State<ChatRoom> createState() => _ChatRoomState();
 }
 
 class _ChatRoomState extends State<ChatRoom>{
   TextEditingController sendMessageController = TextEditingController();
-
+  TextEditingController editingController = TextEditingController();
+  bool editing = false;
   @override
   void initState() {
     super.initState();
@@ -79,50 +81,124 @@ class _ChatRoomState extends State<ChatRoom>{
 
             // TODO on veut pouvoir edit ( si c'est du text donc type = 0 ) / delete un message ( en restant appuyer dessus ça ouvre un menu deroulant par exemple ? )
             return ListTile(
-              contentPadding: EdgeInsets.all(0),
+              contentPadding: const EdgeInsets.all(0),
               // TODO mettre en subtitle les personnes qui ont vu les messages dans la liste "lastMessageSeen" de discussion
               //subtitle: Text(""),
-              title: Row(
+              title: CupertinoOptions(body: Row(
                 mainAxisAlignment: isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
                 children: [
                   Container(
-                    margin: const EdgeInsets.all(2.0),
+                    margin: EdgeInsets.all(2.0),
                     decoration: BoxDecoration(
-                      color: (!isCurrentUser ? ColorConstants.backgroundHighlight : ColorConstants.primaryHighlight),
-                      borderRadius: const BorderRadius.all(Radius.circular(20))
+                        color: (!isCurrentUser ? ColorConstants.backgroundHighlight : ColorConstants.primaryHighlight),
+                        borderRadius: const BorderRadius.all(Radius.circular(20))
                     ),
-                    child: Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(4.0),
-                          child: Row(
-                            children: [
-                              !isCurrentUser ? userinfo.getCircleAvatar() : const Text(""),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Column(
+                    child: FittedBox(
+                      // fit: BoxFit.fitWidth,
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: Row(
+                              children: [
+                                !isCurrentUser ? userinfo.getCircleAvatar() : const Text(""),
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Column(
                                     crossAxisAlignment: !isCurrentUser ? CrossAxisAlignment.start : CrossAxisAlignment.end,
                                     children: [
-                                    Text(userinfo.displayName, style: !isCurrentUser ? TextConstants.hintPrimary : TextConstants.hintSecondary),
-                                    msg.type == 0 ? Text(msg.messageContent, style: !isCurrentUser ? TextConstants.defaultPrimary : TextConstants.defaultSecondary) : Row(),
-                                  ],
+                                      DefaultTextStyle(
+                                        style: !isCurrentUser ? TextConstants.hintPrimary : TextConstants.hintSecondary,
+                                        child: Text(userinfo.displayName),
+                                      ),
+                                      msg.type == 0 ? FittedBox(
+                                        child: Container(
+                                          constraints: BoxConstraints(
+                                            maxWidth: (MediaQuery.of(context).size.width)/2,
+                                          ),
+                                          child: DefaultTextStyle(
+                                            style: !isCurrentUser ? TextConstants.defaultPrimary : TextConstants.defaultSecondary,
+                                            child: Text(
+                                              msg.messageContent,
+                                            ),
+                                          ),
+                                        ),
+
+                                      ) : Row(),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              isCurrentUser ? userinfo.getCircleAvatar() : const Text(""),
-                            ],
+                                isCurrentUser ? userinfo.getCircleAvatar() : const Text(""),
+                              ],
+                            ),
                           ),
-                        ),
-                        msg.type == 1 ? ClipRRect(
-                          borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
-                          child: Image(
-                              width:(MediaQuery.of(context).size.width*1)/2,
-                              image:NetworkImage(msg.imgUrl!)),
-                        ) : Row(),
-                      ],
+                          msg.type == 1 ? ClipRRect(
+                            borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
+                            child: Image(
+                                width:(MediaQuery.of(context).size.width*1)/2,
+                                image:NetworkImage(msg.imgUrl!)
+                            ),
+                          ) : Row(),
+                        ],
+                      ),
                     ),
                   ),
                 ],
-              ),
+              ), message: msg, isCurrentUser: isCurrentUser),
+              // title: CupertinoContextMenu(
+              //   child: ,
+              //   actions: <Widget>[
+              //     editing ? CupertinoContextMenuAction(
+              //       child: CupertinoTextField(
+              //           controller: editingController,
+              //       ),
+              //     ) : Row(),
+              //     isCurrentUser && !editing ? CupertinoContextMenuAction(
+              //       trailingIcon: Icons.edit,
+              //       child: const Text(
+              //           'Modifier',
+              //           style: TextStyle(
+              //               fontWeight: FontWeight.bold),
+              //       ),
+              //       onPressed: () {
+              //         editingController.text = msg.messageContent;
+              //         editing = true;
+              //         Navigator.pop(context);
+              //       },
+              //     ) : Row(),
+              //     isCurrentUser && editing ? CupertinoContextMenuAction(
+              //       child: const Text(
+              //         'Confirmer',
+              //         style: TextStyle(
+              //           color: Colors.green,
+              //             fontWeight: FontWeight.bold),
+              //       ),
+              //       onPressed: () {
+              //         // TODO Fonction qui met à jour le message id msg.messageId
+              //         editing = false;
+              //         Navigator.pop(context);
+              //       },
+              //     ) : Row(),
+              //     isCurrentUser ? CupertinoContextMenuAction(
+              //       trailingIcon: Icons.delete,
+              //       child: const Text(
+              //           'Supprimer',
+              //       style: TextStyle(
+              //           fontWeight: FontWeight.bold,
+              //           color: Colors.red),
+              //       ),
+              //       onPressed: () {
+              //         Navigator.pop(context);
+              //       },
+              //     ) : Row(),
+              //     msg.type != 0 ? CupertinoContextMenuAction(
+              //       child: const Text('Enregistrer'),
+              //       onPressed: () {
+              //         Navigator.pop(context);
+              //       },
+              //     ) : Row(),
+              //   ],
+              // )
             );
           }
         );
@@ -144,7 +220,6 @@ class _ChatRoomState extends State<ChatRoom>{
             if (snapshot.hasError || !snapshot.hasData || snapshot.data!.data() == null) {
               return const Text('Something went wrong', style: TextConstants.titlePrimary);
             }
-
             Discussion discussion = snapshot.data!.data()!;
             discussion.updateLastMessageSeenForCurrentUser(discussion.messagesIds[0]);
             return Scaffold(
@@ -204,8 +279,6 @@ class _ChatRoomState extends State<ChatRoom>{
                         ],
                       )
                     ],
-
-
               ),
             );
           }
