@@ -78,7 +78,8 @@ class Message{
     FirebaseFirestore.instance.runTransaction((transaction) async {
       DocumentSnapshot<Message> freshSnap = await transaction.get(ref);
       transaction.update(freshSnap.reference, {
-        'discussionId': "deleted"+discussionId,
+        'type': 3,
+        'messageContent': "<Message supprimé>",
       });
     });
   }
