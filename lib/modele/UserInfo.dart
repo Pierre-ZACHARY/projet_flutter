@@ -68,7 +68,7 @@ class Userinfo{
         .collection('users')
         .where('active', isEqualTo: true)
         .where('displayName', isGreaterThanOrEqualTo: displayName)
-        .where('displayName', isLessThanOrEqualTo: displayName+ '\uf8ff')
+        // .where('displayName', isLessThanOrEqualTo: displayName+ '\uf8ff')
         .withConverter<Userinfo>(
           fromFirestore: (snapshot, _) => Userinfo.fromJson(snapshot.data()!),
           toFirestore: (bandnames, _) => bandnames.toJson(),
