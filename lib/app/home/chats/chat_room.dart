@@ -4,8 +4,11 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mobx/mobx.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:projet_flutter/app/home/chats/chat_room_param.dart';
 import 'package:projet_flutter/modele/Discussion.dart';
 import 'package:projet_flutter/modele/Message.dart';
@@ -25,8 +28,10 @@ class ChatRoom extends StatefulWidget{
 class _ChatRoomState extends State<ChatRoom>{
   TextEditingController sendMessageController = TextEditingController();
 
+
   @override
   void initState() {
+
     super.initState();
   }
 
@@ -52,7 +57,79 @@ class _ChatRoomState extends State<ChatRoom>{
     }
   }
 
+  Future<void> setLastMessageSeen(String id) async{
+    DocumentReference<Discussion> ref = Discussion.getDiscussionReference(widget.discussionId);
+    DocumentSnapshot<Discussion> snapshot = await ref.get();
+    Discussion discussion = snapshot.data()!;
+    discussion.updateLastMessageSeenForCurrentUser(id);
+  }
+
+  Widget _buildMessageTileContent(BuildContext context, Message msg){
+    Stream<DocumentSnapshot<Userinfo>> userinfoStream = Userinfo.getUserDocumentStream(msg.userId);
+    return StreamBuilder<DocumentSnapshot<Userinfo>>(
+        stream: userinfoStream,
+        builder: (context, UserinfoSnapshot) {
+          if (UserinfoSnapshot.connectionState == ConnectionState.waiting) {
+            return const Text("");
+          }
+          if (UserinfoSnapshot.hasError || !UserinfoSnapshot.hasData || UserinfoSnapshot.data!.data() == null) {
+            return const Text('Something went wrong', style: TextConstants.defaultPrimary);
+          }
+          Userinfo userinfo = UserinfoSnapshot.data!.data()!;
+          bool isCurrentUser = userinfo.uid == FirebaseAuth.instance.currentUser!.uid;
+
+          return ListTile(
+            contentPadding: EdgeInsets.all(0),
+            // TODO mettre en subtitle les personnes qui ont vu les messages dans la liste "lastMessageSeen" de discussion
+            //subtitle: Text(""),
+            title: Row(
+              mainAxisAlignment: isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+              children: [
+                Container(
+                  margin: const EdgeInsets.all(2.0),
+                  decoration: BoxDecoration(
+                      color: (!isCurrentUser ? ColorConstants.backgroundHighlight : ColorConstants.primaryHighlight),
+                      borderRadius: const BorderRadius.all(Radius.circular(20))
+                  ),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Row(
+                          children: [
+                            !isCurrentUser ? userinfo.getCircleAvatar() : const Text(""),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                crossAxisAlignment: !isCurrentUser ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+                                children: [
+                                  Text(userinfo.displayName, style: !isCurrentUser ? TextConstants.hintPrimary : TextConstants.hintSecondary),
+                                  msg.type == 0 ? Text(msg.messageContent, style: !isCurrentUser ? TextConstants.defaultPrimary : TextConstants.defaultSecondary) : Row(),
+                                ],
+                              ),
+                            ),
+                            isCurrentUser ? userinfo.getCircleAvatar() : const Text(""),
+                          ],
+                        ),
+                      ),
+                      msg.type == 1 ? ClipRRect(
+                        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
+                        child: Image(
+                            width:(MediaQuery.of(context).size.width*1)/2,
+                            image:NetworkImage(msg.imgUrl!)),
+                      ) : Row(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+    );
+  }
+
   Widget _buildMessageTile(BuildContext context, String messageId){
+    // UNUSED
     Stream<DocumentSnapshot<Message>> stream = Message.getMessageStream(messageId);
     return StreamBuilder<DocumentSnapshot<Message>>(
       stream: stream,
@@ -64,101 +141,44 @@ class _ChatRoomState extends State<ChatRoom>{
           return const Text('Something went wrong', style: TextConstants.defaultPrimary);
         }
         Message msg = snapshot.data!.data()!;
-        Stream<DocumentSnapshot<Userinfo>> userinfoStream = Userinfo.getUserDocumentStream(msg.userId);
-        return StreamBuilder<DocumentSnapshot<Userinfo>>(
-          stream: userinfoStream,
-          builder: (context, UserinfoSnapshot) {
-            if (UserinfoSnapshot.connectionState == ConnectionState.waiting) {
-              return const Text("");
-            }
-            if (UserinfoSnapshot.hasError || !UserinfoSnapshot.hasData || UserinfoSnapshot.data!.data() == null) {
-              return const Text('Something went wrong', style: TextConstants.defaultPrimary);
-            }
-            Userinfo userinfo = UserinfoSnapshot.data!.data()!;
-            bool isCurrentUser = userinfo.uid == FirebaseAuth.instance.currentUser!.uid;
-
-            // TODO on veut pouvoir edit ( si c'est du text donc type = 0 ) / delete un message ( en restant appuyer dessus ça ouvre un menu deroulant par exemple ? )
-            return ListTile(
-              contentPadding: EdgeInsets.all(0),
-              // TODO mettre en subtitle les personnes qui ont vu les messages dans la liste "lastMessageSeen" de discussion
-              //subtitle: Text(""),
-              title: Row(
-                mainAxisAlignment: isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-                children: [
-                  Container(
-                    margin: const EdgeInsets.all(2.0),
-                    decoration: BoxDecoration(
-                      color: (!isCurrentUser ? ColorConstants.backgroundHighlight : ColorConstants.primaryHighlight),
-                      borderRadius: const BorderRadius.all(Radius.circular(20))
-                    ),
-                    child: Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(4.0),
-                          child: Row(
-                            children: [
-                              !isCurrentUser ? userinfo.getCircleAvatar() : const Text(""),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Column(
-                                    crossAxisAlignment: !isCurrentUser ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-                                    children: [
-                                    Text(userinfo.displayName, style: !isCurrentUser ? TextConstants.hintPrimary : TextConstants.hintSecondary),
-                                    msg.type == 0 ? Text(msg.messageContent, style: !isCurrentUser ? TextConstants.defaultPrimary : TextConstants.defaultSecondary) : Row(),
-                                  ],
-                                ),
-                              ),
-                              isCurrentUser ? userinfo.getCircleAvatar() : const Text(""),
-                            ],
-                          ),
-                        ),
-                        msg.type == 1 ? ClipRRect(
-                          borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
-                          child: Image(
-                              width:(MediaQuery.of(context).size.width*1)/2,
-                              image:NetworkImage(msg.imgUrl!)),
-                        ) : Row(),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-        );
+        return _buildMessageTileContent(context, msg);
       }
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final stream = Discussion.getDiscussionStream(widget.discussionId);
+
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-        child: StreamBuilder<DocumentSnapshot<Discussion>>(
-          stream: stream,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError || !snapshot.hasData || snapshot.data!.data() == null) {
-              return const Text('Something went wrong', style: TextConstants.titlePrimary);
-            }
-
-            Discussion discussion = snapshot.data!.data()!;
-            if(discussion.messagesIds.isNotEmpty){
-              discussion.updateLastMessageSeenForCurrentUser(discussion.messagesIds[0]);
-            }
-            return Scaffold(
+        child: Scaffold(
               backgroundColor: ColorConstants.background,
               appBar: AppBar(
                 backgroundColor: ColorConstants.backgroundHighlight,
                 title: Row(
                   children: [
-                    discussion.getDiscussionCircleAvatar(),
+                    StreamBuilder<DocumentSnapshot<Discussion>>(
+                      stream: Discussion.getDiscussionStream(widget.discussionId),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return const Center(child: CircularProgressIndicator(),);
+                        }
+                        Discussion disc = snapshot.data!.data()!;
+                        return disc.getDiscussionCircleAvatar() ;
+                      }
+                    ),
                     Expanded(child: Padding(
                       padding: const EdgeInsets.all(8),
-                      child: discussion.getTitleTextWidget(),
+                      child: StreamBuilder<DocumentSnapshot<Discussion>>(
+                          stream: Discussion.getDiscussionStream(widget.discussionId),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) {
+                              return const Text("Loading");
+                            }
+                            Discussion disc = snapshot.data!.data()!;
+                            return disc.getTitleTextWidget() ;
+                          }
+                      ),
                     )),
                     IconButton(
                       icon: const Icon(Icons.settings),
@@ -173,15 +193,36 @@ class _ChatRoomState extends State<ChatRoom>{
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          // TODO lazy load la listview ( faut load seulement les messages tiles des messages visibles et pas tous les messages tiles )
-                          child: ListView.builder(
-                            scrollDirection: Axis.vertical,
-                            reverse: true,
-                            itemCount: discussion.messagesIds.length,
-                            itemBuilder: (context, index) => _buildMessageTile(context, discussion.messagesIds[index]),
+
+                            child: StreamBuilder<QuerySnapshot<Message>>(
+                              stream: FirebaseFirestore.instance
+                                  .collection('messages')
+                                  .where('discussionId', isEqualTo: widget.discussionId)
+                                  .orderBy('sendDatetime', descending: true)
+                                  .limit(20) // TODO lazy load la listview ( faut load seulement les messages tiles des messages visibles et pas tous les messages tiles )
+                                  .withConverter<Message>(
+                                    fromFirestore: (snapshot, _) => Message.fromJson(snapshot.data()!),
+                                    toFirestore: (discussion, _) => discussion.toJson(),
+                                  )
+                                  .snapshots(),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData) {
+                                  return const Center(child: CircularProgressIndicator());
+                                }
+                                if( snapshot.data!.docs.isNotEmpty){
+                                  setLastMessageSeen( snapshot.data!.docs[0].data().messageId);
+                                }
+                                return ListView.builder(
+                                  scrollDirection: Axis.vertical,
+                                  reverse: true,
+                                  itemCount: snapshot.data!.docs.length,
+                                  itemBuilder: (context, index) => _buildMessageTileContent(context, snapshot.data!.docs[index].data()),
+                                );
+                              }
+                            ),
                           ),
                         ),
-                      ),
+
                       Row(
                         children: [
                           IconButton(
@@ -193,7 +234,7 @@ class _ChatRoomState extends State<ChatRoom>{
                               controller: sendMessageController,
                               onEditingComplete:() => sendMsg(),
                               style: TextConstants.defaultPrimary,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 hintText: "Message...",
                                   hintStyle: TextConstants.defaultPrimary
                               ),
@@ -209,10 +250,7 @@ class _ChatRoomState extends State<ChatRoom>{
 
 
               ),
-            );
-          }
-        ),
+            )
     );
   }
-
 }

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mobx/mobx.dart';
 import 'package:projet_flutter/app/home/chats/chat_room.dart';
 import 'package:projet_flutter/main.dart';
 import 'package:projet_flutter/modele/DiscussionsList.dart';
@@ -16,17 +17,17 @@ import '../utils/cloudStorageUtils.dart';
 class Discussion {
   // correspond à une discussion entre deux ou plusieurs utilisateurs
   final String discussion_id;
-  final List<dynamic> messagesIds; // trié par plus récent : les messages en début de liste sont ceux qui viennent d'arriver
+  //final List<dynamic> messagesIds; // trié par plus récent : les messages en début de liste sont ceux qui viennent d'arriver
   final List<dynamic> usersIds;
   final Map<dynamic, dynamic> lastMessageSeenByUsers;
   final int type; // 0 = discussion entre 2 utilisateurs, 1 = discussion de groupe
   final String? imgUrl; // image du groupe si type 1
   final String? groupTitle; // titre du groupe si type 1
 
-  Discussion({required this.imgUrl, required this.groupTitle ,required this.discussion_id, required this.type, required this.lastMessageSeenByUsers, required this.messagesIds, required this.usersIds});
+  Discussion({required this.imgUrl, required this.groupTitle ,required this.discussion_id, required this.type, required this.lastMessageSeenByUsers, required this.usersIds});
   Discussion.fromJson(Map<String, Object?> json) : this(
       discussion_id: json['discussion_id']! as String,
-      messagesIds: json['messagesIds']! as List<dynamic>,
+     // messagesIds: json['messagesIds']! as List<dynamic>,
       usersIds: json['usersIds']! as List<dynamic>,
       type: json['type']! as int,
       lastMessageSeenByUsers: json['lastMessageSeenByUsers']! as Map<dynamic, dynamic>,
@@ -36,7 +37,7 @@ class Discussion {
   Map<String, Object?> toJson() {
     return {
       'discussion_id': discussion_id,
-      'messagesIds': messagesIds,
+      //'messagesIds': messagesIds,
       'usersIds': usersIds,
       'type': type,
       'lastMessageSeenByUsers': lastMessageSeenByUsers,
@@ -67,31 +68,14 @@ class Discussion {
   Future<void> sendMessageFromCurrentUser(String messageContent, {int type=0} ) async {
     DocumentReference<Discussion> ref = getDiscussionReference(discussion_id);
     String userId = FirebaseAuth.instance.currentUser!.uid;
-    Message? msg = await Message.newMessage(userId: userId, discussionId: discussion_id, type: 0, messageContent: messageContent);
-    FirebaseFirestore.instance.runTransaction((transaction) async {
-      DocumentSnapshot<Discussion> freshSnap = await transaction.get(ref);
-      List<dynamic> messagesIds = freshSnap.data()!.messagesIds;
-      messagesIds.insert(0, msg!.messageId);
-      transaction.update(freshSnap.reference, {
-        'messagesIds': messagesIds,
-      });
-    });
+    await Message.newMessage(userId: userId, discussionId: discussion_id, type: 0, messageContent: messageContent);
     await setDiscussionInFirstPosition();
     // TODO send push notif
   }
 
   Future<void> sendImageFromCurrentUser(File imageFile) async{
     String userid = FirebaseAuth.instance.currentUser!.uid;
-    DocumentReference<Discussion> ref = getDiscussionReference(discussion_id);
-    Message? msg = await Message.newMessage(userId: userid, discussionId: discussion_id, type: 1, messageContent: "Contient image", image: imageFile);
-    FirebaseFirestore.instance.runTransaction((transaction) async {
-      DocumentSnapshot<Discussion> freshSnap = await transaction.get(ref);
-      List<dynamic> messagesIds = freshSnap.data()!.messagesIds;
-      messagesIds.insert(0, msg!.messageId);
-      transaction.update(freshSnap.reference, {
-        'messagesIds': messagesIds,
-      });
-    });
+    await Message.newMessage(userId: userid, discussionId: discussion_id, type: 1, messageContent: "Contient image", image: imageFile);
     await setDiscussionInFirstPosition();
     // TODO send push notif
   }
@@ -100,6 +84,7 @@ class Discussion {
     // TODO ( c'est un peu comme la fonction send image sauf que on upload pas d'image, le stickers est stocké dans les assets de l'application, il faut juste indiquer lequel on envoi )
   }
 
+  @action
   void updateLastMessageSeenForCurrentUser(String messageId){
     DocumentReference<Discussion> ref = getDiscussionReference(discussion_id);
     String userId = FirebaseAuth.instance.currentUser!.uid;
@@ -113,14 +98,15 @@ class Discussion {
     });
   }
 
-  int numberOfUnseenMessagesForCurrentUser() {
-    String userId = FirebaseAuth.instance.currentUser!.uid;
-    String? msgId = lastMessageSeenByUsers[userId];
-    if(msgId == null){
-      // si y'en a pas : il n'a jamais ouvert la discu
-      return messagesIds.length;
-    }
-    return messagesIds.indexOf(msgId);
+
+  Stream<QuerySnapshot<Message>> getAllMessagesStream(){
+    return Message.firestoreCollectionReference()
+        .where('discussionId', isEqualTo: discussion_id)
+        .orderBy('sendDatetime', descending: true)
+        .withConverter<Message>(
+      fromFirestore: (snapshot, _) => Message.fromJson(snapshot.data()!),
+      toFirestore: (discussion, _) => discussion.toJson(),
+    ).snapshots();
   }
 
   Widget getDiscussionCircleAvatar(){
@@ -307,7 +293,7 @@ class Discussion {
         type = 1;
       }
       discussion = Discussion(
-          discussion_id: discussionId, messagesIds: [], usersIds: usersIds, type: type, lastMessageSeenByUsers: {}, imgUrl: null, groupTitle: null);
+          discussion_id: discussionId, usersIds: usersIds, type: type, lastMessageSeenByUsers: {}, imgUrl: null, groupTitle: null);
       discussionRef.doc(discussionId).set(discussion.toJson())
           .then((value) => print("discussion open"))
           .catchError((error) => print("Failed to open discussion: $error"));

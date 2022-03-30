@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:projet_flutter/app/home/chats/chat_room.dart';
 import 'package:projet_flutter/modele/Discussion.dart';
 import 'package:projet_flutter/modele/DiscussionsList.dart';
+import 'package:projet_flutter/modele/Message.dart';
 import 'package:projet_flutter/modele/UserInfo.dart';
 import 'package:projet_flutter/utils/constant.dart';
 import '/modele/Bandnames.dart';
@@ -41,7 +42,6 @@ class _ChatPageState extends State<ChatPage>{
           return const Text('Something went wrong', style: TextConstants.titlePrimary);
         }
         Discussion discussion = snapshot.data!.data()!;
-
         return ListTile(
           contentPadding: const EdgeInsets.all(0.0),
           title: Row(
@@ -51,15 +51,36 @@ class _ChatPageState extends State<ChatPage>{
                 padding: const EdgeInsets.all(8.0),
                 child: discussion.getTitleTextWidget(),
               )),
-              discussion.numberOfUnseenMessagesForCurrentUser() > 0 ? Container(
-                padding: const EdgeInsets.only(left: 5, right: 5),
-                decoration: const BoxDecoration(
-                  color: ColorConstants.backgroundHighlight,
-                  borderRadius: BorderRadius.all(Radius.circular(20))
-                ),
-                child: Text(discussion.numberOfUnseenMessagesForCurrentUser().toString(),
-                  style: TextConstants.defaultPrimary,),
-              ) : Row(),
+              StreamBuilder<QuerySnapshot<Message>>(
+                stream: discussion.getAllMessagesStream(),
+                builder: (context, snapshot) {
+                  String userId = FirebaseAuth.instance.currentUser!.uid;
+                  String? msgId = discussion.lastMessageSeenByUsers[userId];
+                  int unseennumber ;
+                  if(!snapshot.hasData){
+                    unseennumber = 0;
+                  }
+                  else{
+                    unseennumber = snapshot.data!.docs.length;
+                    for(int i = 0; i<snapshot.data!.docs.length; i++){
+                      if(snapshot.data!.docs[i].data().messageId == msgId){
+                        unseennumber = i;
+                        break;
+                      }
+                    }
+                  }
+
+                  return unseennumber > 0 ? Container(
+                    padding: const EdgeInsets.only(left: 5, right: 5),
+                    decoration: const BoxDecoration(
+                      color: ColorConstants.backgroundHighlight,
+                      borderRadius: BorderRadius.all(Radius.circular(20))
+                    ),
+                    child: Text(unseennumber.toString(),
+                      style: TextConstants.defaultPrimary,),
+                  ): Row();
+                }
+              ),
             ],
           ),
           onTap: ()=>{

@@ -72,14 +72,13 @@ class Message{
     });
   }
 
+
   Future<void> deleteMessage() async {
-    DocumentReference<Discussion> ref = Discussion.getDiscussionReference(discussionId);
+    DocumentReference<Message> ref = getMessageReference(messageId);
     FirebaseFirestore.instance.runTransaction((transaction) async {
-      DocumentSnapshot<Discussion> freshSnap = await transaction.get(ref);
-      List<dynamic> discMessagesIds = freshSnap.data()!.messagesIds;
-      discMessagesIds.remove(messageId);
+      DocumentSnapshot<Message> freshSnap = await transaction.get(ref);
       transaction.update(freshSnap.reference, {
-        'messagesIds': discMessagesIds,
+        'discussionId': discussionId+"deleted",
       });
     });
   }
