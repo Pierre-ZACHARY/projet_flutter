@@ -31,15 +31,9 @@ class _ChatRoomState extends State<ChatRoom>{
   TextEditingController editingController = TextEditingController();
   bool editing = false;
 
-
-  @override
-  void initState() {
-
-    super.initState();
-  }
-
   Future<void> sendMsg() async{
     String text = sendMessageController.text;
+    _messageNumber = 10;
     if(text.replaceAll(" ", "").isNotEmpty){
       DocumentReference<Discussion> ref = Discussion.getDiscussionReference(widget.discussionId);
       DocumentSnapshot<Discussion> snapshot = await ref.get();
@@ -53,6 +47,7 @@ class _ChatRoomState extends State<ChatRoom>{
     final ImagePicker _picker = ImagePicker();
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if(image != null){
+      _messageNumber = 10;
       DocumentReference<Discussion> ref = Discussion.getDiscussionReference(widget.discussionId);
       DocumentSnapshot<Discussion> snapshot = await ref.get();
       Discussion discussion = snapshot.data()!;
@@ -82,54 +77,6 @@ class _ChatRoomState extends State<ChatRoom>{
           bool isCurrentUser = userinfo.uid == FirebaseAuth.instance.currentUser!.uid;
 
           return ListTile(
-            contentPadding: EdgeInsets.all(0),
-            // TODO mettre en subtitle les personnes qui ont vu les messages dans la liste "lastMessageSeen" de discussion
-            //subtitle: Text(""),
-            title: Row(
-              mainAxisAlignment: isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-              children: [
-                Container(
-                  margin: const EdgeInsets.all(2.0),
-                  decoration: BoxDecoration(
-                      color: (!isCurrentUser ? ColorConstants.backgroundHighlight : ColorConstants.primaryHighlight),
-                      borderRadius: const BorderRadius.all(Radius.circular(20))
-                  ),
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: Row(
-                          children: [
-                            !isCurrentUser ? userinfo.getCircleAvatar() : const Text(""),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Column(
-                                crossAxisAlignment: !isCurrentUser ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-                                children: [
-                                  Text(userinfo.displayName, style: !isCurrentUser ? TextConstants.hintPrimary : TextConstants.hintSecondary),
-                                  msg.type == 0 ? Text(msg.messageContent, style: !isCurrentUser ? TextConstants.defaultPrimary : TextConstants.defaultSecondary) : Row(),
-                                ],
-                              ),
-                            ),
-                            isCurrentUser ? userinfo.getCircleAvatar() : const Text(""),
-                          ],
-                        ),
-                      ),
-                      msg.type == 1 ? ClipRRect(
-                        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
-                        child: Image(
-                            width:(MediaQuery.of(context).size.width*1)/2,
-                            image:NetworkImage(msg.imgUrl!)),
-                      ) : Row(),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-            // TODO on veut pouvoir edit ( si c'est du text donc type = 0 ) / delete un message ( en restant appuyer dessus ça ouvre un menu deroulant par exemple ? )
-            return ListTile(
               contentPadding: const EdgeInsets.all(0),
               // TODO mettre en subtitle les personnes qui ont vu les messages dans la liste "lastMessageSeen" de discussion
               //subtitle: Text(""),
@@ -194,88 +141,36 @@ class _ChatRoomState extends State<ChatRoom>{
                   ),
                 ],
               ), message: msg, isCurrentUser: isCurrentUser),
-              // title: CupertinoContextMenu(
-              //   child: ,
-              //   actions: <Widget>[
-              //     editing ? CupertinoContextMenuAction(
-              //       child: CupertinoTextField(
-              //           controller: editingController,
-              //       ),
-              //     ) : Row(),
-              //     isCurrentUser && !editing ? CupertinoContextMenuAction(
-              //       trailingIcon: Icons.edit,
-              //       child: const Text(
-              //           'Modifier',
-              //           style: TextStyle(
-              //               fontWeight: FontWeight.bold),
-              //       ),
-              //       onPressed: () {
-              //         editingController.text = msg.messageContent;
-              //         editing = true;
-              //         Navigator.pop(context);
-              //       },
-              //     ) : Row(),
-              //     isCurrentUser && editing ? CupertinoContextMenuAction(
-              //       child: const Text(
-              //         'Confirmer',
-              //         style: TextStyle(
-              //           color: Colors.green,
-              //             fontWeight: FontWeight.bold),
-              //       ),
-              //       onPressed: () {
-              //         // TODO Fonction qui met à jour le message id msg.messageId
-              //         editing = false;
-              //         Navigator.pop(context);
-              //       },
-              //     ) : Row(),
-              //     isCurrentUser ? CupertinoContextMenuAction(
-              //       trailingIcon: Icons.delete,
-              //       child: const Text(
-              //           'Supprimer',
-              //       style: TextStyle(
-              //           fontWeight: FontWeight.bold,
-              //           color: Colors.red),
-              //       ),
-              //       onPressed: () {
-              //         Navigator.pop(context);
-              //       },
-              //     ) : Row(),
-              //     msg.type != 0 ? CupertinoContextMenuAction(
-              //       child: const Text('Enregistrer'),
-              //       onPressed: () {
-              //         Navigator.pop(context);
-              //       },
-              //     ) : Row(),
-              //   ],
-              // )
             );
           }
         );
       }
-    );
+
+
+  int _messageNumber = 20;
+  int _totalMessages = -1;
+
+  ScrollController _controller = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_scrollListener);
+
+    //_controller.jumpTo(position?.pixels ?? 0);
+    FirebaseFirestore.instance
+        .collection('messages')
+        .where('discussionId', isEqualTo: widget.discussionId)
+        .get()
+        .then((value) =>
+        {
+          _totalMessages = value.docs.length
+        });
   }
 
-  Widget _buildMessageTile(BuildContext context, String messageId){
-    // UNUSED
-    Stream<DocumentSnapshot<Message>> stream = Message.getMessageStream(messageId);
-    return StreamBuilder<DocumentSnapshot<Message>>(
-      stream: stream,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Text("");
-        }
-        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.data() == null) {
-          return const Text('Something went wrong', style: TextConstants.defaultPrimary);
-        }
-        Message msg = snapshot.data!.data()!;
-        return _buildMessageTileContent(context, msg);
-      }
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
-
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
         child: Scaffold(
@@ -326,24 +221,28 @@ class _ChatRoomState extends State<ChatRoom>{
                                   .collection('messages')
                                   .where('discussionId', isEqualTo: widget.discussionId)
                                   .orderBy('sendDatetime', descending: true)
-                                  .limit(20) // TODO lazy load la listview ( faut load seulement les messages tiles des messages visibles et pas tous les messages tiles )
+                                  .limit(_messageNumber)
                                   .withConverter<Message>(
                                     fromFirestore: (snapshot, _) => Message.fromJson(snapshot.data()!),
                                     toFirestore: (discussion, _) => discussion.toJson(),
                                   )
                                   .snapshots(),
                               builder: (context, snapshot) {
-                                if (!snapshot.hasData) {
+                                if (!snapshot.hasData || snapshot.connectionState == ConnectionState.waiting) {
                                   return const Center(child: CircularProgressIndicator());
                                 }
                                 if( snapshot.data!.docs.isNotEmpty){
                                   setLastMessageSeen( snapshot.data!.docs[0].data().messageId);
                                 }
                                 return ListView.builder(
+                                  key: const PageStorageKey('const name here'),
                                   scrollDirection: Axis.vertical,
                                   reverse: true,
+                                  controller: _controller,
                                   itemCount: snapshot.data!.docs.length,
-                                  itemBuilder: (context, index) => _buildMessageTileContent(context, snapshot.data!.docs[index].data()),
+                                  itemBuilder: (context, index) {
+                                      return _buildMessageTileContent(context, snapshot.data!.docs[index].data());
+                                    },
                                 );
                               }
                             ),
@@ -374,10 +273,25 @@ class _ChatRoomState extends State<ChatRoom>{
                         ],
                       )
                     ],
-
-
               ),
             )
     );
+  }
+
+  _scrollListener() {
+    if (_controller.offset >= _controller.position.maxScrollExtent &&
+        !_controller.position.outOfRange) {
+      _loadMore();
+    }
+  }
+  void _loadMore() {
+    WidgetsBinding.instance?.addPostFrameCallback((_){
+      if(_messageNumber < _totalMessages){
+        setState(() {
+          _messageNumber += 10;
+        });
+      }
+    });
+
   }
 }

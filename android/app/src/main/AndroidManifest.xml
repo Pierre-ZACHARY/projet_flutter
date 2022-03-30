@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="flutter.projet.projet_flutter">
-   <application
+
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
+    <application
         android:label="projet_flutter"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">

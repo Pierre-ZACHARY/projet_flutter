@@ -1,14 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:gallery_saver/gallery_saver.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:projet_flutter/modele/Message.dart';
-import 'package:http/http.dart';
-import 'package:path/path.dart';
-import 'package:flowder/flowder.dart';
-
 
 
 class CupertinoOptions extends StatefulWidget{
@@ -27,8 +23,7 @@ class CupertinoOptions extends StatefulWidget{
 }
 
 class _CupertinoOptionsState extends State<CupertinoOptions>{
-  late DownloaderUtils options;
-  late DownloaderCore core;
+
   late final String path;
 
   @override
@@ -46,33 +41,48 @@ class _CupertinoOptionsState extends State<CupertinoOptions>{
     path = (await getExternalStorageDirectory())!.path;
   }
 
+  _toastInfo(String info) {
+    Fluttertoast.showToast(msg: info, toastLength: Toast.LENGTH_LONG);
+  }
+
+  _downloadImg(String imgUrl) async {
+    // https://github.com/Baseflow/flutter-permission-handler/tree/master/permission_handler
+    var serviceStatus = await Permission.photos.status;
+    bool isOn = serviceStatus == PermissionStatus.granted;
+    if(!isOn){
+      if (await Permission.photos.isPermanentlyDenied) {
+        openAppSettings();
+      }
+      Map<Permission, PermissionStatus> statuses = await [
+        Permission.photos,
+      ].request();
+      if((statuses[Permission.photos] != PermissionStatus.granted)){
+        _toastInfo('Cancelled');
+        return;
+      }
+    }
+    GallerySaver.saveImage(imgUrl).then((bool? success) {
+      setState(() {
+        if(success ?? false) {
+          _toastInfo('Image saved');
+        }
+        else{
+          _toastInfo('Error saving image');
+        }
+      });
+    });
+  }
+
   Widget _buildCupertinoMenu(BuildContext context, Widget body, Message message){
     return CupertinoContextMenu(
         child : body,
         actions: <Widget>[
-          widget.isCurrentUser ? CupertinoContextMenuAction(
+          widget.isCurrentUser && message.type==0 ? CupertinoContextMenuAction(
             child: CupertinoTextField(
               controller: widget.editingController,
             ),
           ) : Row(),
-          // widget.isCurrentUser && !widget.editing ? CupertinoContextMenuAction(
-          //   trailingIcon: Icons.edit,
-          //   child: const Text(
-          //     'Modifier',
-          //     style: TextStyle(
-          //         fontWeight: FontWeight.bold),
-          //   ),
-          //   onPressed: () {
-          //     if (mounted){
-          //       setState(() {
-          //         widget.editingController.text = message.messageContent;
-          //         widget.editing = !widget.editing;
-          //       });
-          //     }
-          //     Navigator.pop(context);
-          //   },
-          // ) : Row(),
-          widget.isCurrentUser ? CupertinoContextMenuAction(
+          widget.isCurrentUser && message.type==0 ? CupertinoContextMenuAction(
             trailingIcon: Icons.edit,
             isDefaultAction: true,
             child: const Text(
@@ -82,14 +92,8 @@ class _CupertinoOptionsState extends State<CupertinoOptions>{
                   // fontWeight: FontWeight.bold
                   ),
             ),
-            onPressed: () {
-              // TODO Fonction qui met à jour le message d'id msg.messageId
-              // if (mounted){
-              //   setState(() {
-              //     widget.editingController.text = "";
-              //     widget.editing = false;
-              //   });
-              // }
+            onPressed: () async{
+              await message.editMessage(messageContent: widget.editingController.text);
               Navigator.pop(context);
             },
           ) : Row(),
@@ -98,33 +102,16 @@ class _CupertinoOptionsState extends State<CupertinoOptions>{
             isDestructiveAction: true,
             child: const Text(
               'Supprimer',
-              // style: TextStyle(
-              //     fontWeight: FontWeight.bold,
-              //     color: Colors.red),
             ),
-            onPressed: () {
+            onPressed: () async {
+              await message.deleteMessage();
               Navigator.pop(context);
             },
           ) : Row(),
           message.type != 0 ? CupertinoContextMenuAction(
             child: const Text('Enregistrer'),
-            onPressed: ()async {
-              options = DownloaderUtils(
-                progressCallback: (current, total) {
-                  final progress = (current / total) * 100;
-                  print('Downloading: $progress');
-                },
-                file: File(path + "/F.png"),
-                progress: ProgressImplementation(),
-                onDone: () {
-                  print('COMPLETE');
-                  print(path);
-                },
-                deleteOnCancel: true,
-              );
-              core = await Flowder.download(
-                  widget.message.imgUrl!,
-                  options);
+            onPressed: ()  async {
+              await _downloadImg(message.imgUrl!);
               Navigator.pop(context);
             },
           ) : Row(),
@@ -134,10 +121,10 @@ class _CupertinoOptionsState extends State<CupertinoOptions>{
 
   @override
   Widget build(BuildContext context) {
-    print("Build!");
+    //print("Build!");
     // print(widget.editing);
-    print("Modifier: " + (widget.isCurrentUser && !widget.editing).toString());
-    print("Confirmer: " + (widget.isCurrentUser && widget.editing).toString());
+    //print("Modifier: " + (widget.isCurrentUser && !widget.editing).toString());
+    //print("Confirmer: " + (widget.isCurrentUser && widget.editing).toString());
     widget.editingController.text = widget.message.messageContent;
     return _buildCupertinoMenu(context, widget.body, widget.message);
   }
