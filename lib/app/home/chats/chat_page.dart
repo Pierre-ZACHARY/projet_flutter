@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:projet_flutter/app/home/chats/chat_room.dart';
 import 'package:projet_flutter/modele/Discussion.dart';
 import 'package:projet_flutter/modele/DiscussionsList.dart';
@@ -42,50 +43,81 @@ class _ChatPageState extends State<ChatPage>{
           return const Text('Something went wrong', style: TextConstants.titlePrimary);
         }
         Discussion discussion = snapshot.data!.data()!;
-        return ListTile(
-          contentPadding: const EdgeInsets.all(0.0),
-          title: Row(
-            children: [
-              discussion.getDiscussionCircleAvatar(),
-              Expanded(child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: discussion.getTitleTextWidget(),
-              )),
-              StreamBuilder<QuerySnapshot<Message>>(
-                stream: discussion.getAllMessagesStream(),
-                builder: (context, snapshot) {
-                  String userId = FirebaseAuth.instance.currentUser!.uid;
-                  String? msgId = discussion.lastMessageSeenByUsers[userId];
-                  int unseennumber ;
-                  if(!snapshot.hasData){
-                    unseennumber = 0;
-                  }
-                  else{
-                    unseennumber = snapshot.data!.docs.length;
-                    for(int i = 0; i<snapshot.data!.docs.length; i++){
-                      if(snapshot.data!.docs[i].data().messageId == msgId){
-                        unseennumber = i;
-                        break;
-                      }
-                    }
-                  }
+        return Slidable(
+          key: const ValueKey(0),
+          child: Container(
+            color: Colors.transparent,
+            child: ListTile(
+              contentPadding: const EdgeInsets.all(0.0),
+              title: Row(
+                children: [
+                  discussion.getDiscussionCircleAvatar(),
+                  Expanded(child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: discussion.getTitleTextWidget(),
+                  )),
+                  StreamBuilder<QuerySnapshot<Message>>(
+                      stream: discussion.getAllMessagesStream(),
+                      builder: (context, snapshot) {
+                        String userId = FirebaseAuth.instance.currentUser!.uid;
+                        String? msgId = discussion.lastMessageSeenByUsers[userId];
+                        int unseennumber ;
+                        if(!snapshot.hasData){
+                          unseennumber = 0;
+                        }
+                        else{
+                          unseennumber = snapshot.data!.docs.length;
+                          for(int i = 0; i<snapshot.data!.docs.length; i++){
+                            if(snapshot.data!.docs[i].data().messageId == msgId){
+                              unseennumber = i;
+                              break;
+                            }
+                          }
+                        }
 
-                  return unseennumber > 0 ? Container(
-                    padding: const EdgeInsets.only(left: 5, right: 5),
-                    decoration: const BoxDecoration(
-                      color: ColorConstants.backgroundHighlight,
-                      borderRadius: BorderRadius.all(Radius.circular(20))
-                    ),
-                    child: Text(unseennumber.toString(),
-                      style: TextConstants.defaultPrimary,),
-                  ): Row();
-                }
+                        return unseennumber > 0 ? Container(
+                          padding: const EdgeInsets.only(left: 5, right: 5),
+                          decoration: const BoxDecoration(
+                              color: ColorConstants.backgroundHighlight,
+                              borderRadius: BorderRadius.all(Radius.circular(20))
+                          ),
+                          child: Text(unseennumber.toString(),
+                            style: TextConstants.defaultPrimary,),
+                        ): Row();
+                      }
+                  ),
+                ],
+              ),
+              onTap: ()=>{
+                Navigator.push(context, MaterialPageRoute(builder: (context) => ChatRoom(discussionId: discussionId)))
+              },
+            ),
+          ),
+          endActionPane: ActionPane(
+            motion: const BehindMotion(),
+            // dismissible: DismissiblePane(onDismissed: () {}),
+
+            // All actions are defined in the children parameter.
+            children: [
+              // A SlidableAction can have an icon and/or a label.
+              SlidableAction(
+                onPressed: (context) {},
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                icon: Icons.volume_mute,
+                label: 'Mute',
+              ),
+              SlidableAction(
+                onPressed: (context) {
+                  discussion.removeDiscussionFromCurrentUserList();
+                },
+                backgroundColor: Color(0xFFFE4A49),
+                foregroundColor: Colors.white,
+                icon: Icons.delete,
+                label: 'Delete',
               ),
             ],
           ),
-          onTap: ()=>{
-            Navigator.push(context, MaterialPageRoute(builder: (context) => ChatRoom(discussionId: discussionId)))
-          },
         );
       }
     );

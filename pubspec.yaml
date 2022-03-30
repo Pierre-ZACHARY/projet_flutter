@@ -50,6 +50,7 @@ dependencies:
   fluttertoast:
   gallery_saver:
   permission_handler:
+  flutter_slidable:
 
 
 dev_dependencies:
