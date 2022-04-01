@@ -54,7 +54,26 @@ class _ChatPageState extends State<ChatPage>{
                   discussion.getDiscussionCircleAvatar(),
                   Expanded(child: Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: discussion.getTitleTextWidget(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        discussion.getTitleTextWidget(),
+                        StreamBuilder<QuerySnapshot<Message>>(
+                          stream: discussion.getLastMessageStream(),
+                          builder: (context, snapshot) {
+                            String content;
+                            if(!snapshot.hasData || snapshot.connectionState == ConnectionState.waiting){
+                              content = "Loading...";
+                            }
+                            else{
+                              Message lastm = snapshot.data!.docs[0].data();
+                              content = lastm.messageContent;
+                            }
+                            return Text(content, style: TextConstants.defaultPrimary,);
+                          }
+                        ),
+                      ],
+                    ),
                   )),
                   StreamBuilder<QuerySnapshot<Message>>(
                       stream: discussion.getAllMessagesStream(),

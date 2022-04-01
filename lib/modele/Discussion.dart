@@ -70,14 +70,12 @@ class Discussion {
     String userId = FirebaseAuth.instance.currentUser!.uid;
     await Message.newMessage(userId: userId, discussionId: discussion_id, type: 0, messageContent: messageContent);
     await setDiscussionInFirstPosition();
-    // TODO send push notif
   }
 
   Future<void> sendImageFromCurrentUser(File imageFile) async{
     String userid = FirebaseAuth.instance.currentUser!.uid;
     await Message.newMessage(userId: userid, discussionId: discussion_id, type: 1, messageContent: "Contient image", image: imageFile);
     await setDiscussionInFirstPosition();
-    // TODO send push notif
   }
 
   void sendStickersFromCurrentUser(String StickersIds){
@@ -96,6 +94,17 @@ class Discussion {
         'lastMessageSeenByUsers': localLastMessageSeenByUsers,
       });
     });
+  }
+
+  Stream<QuerySnapshot<Message>> getLastMessageStream(){
+    return Message.firestoreCollectionReference()
+        .where('discussionId', isEqualTo: discussion_id)
+        .orderBy('sendDatetime', descending: true)
+        .limit(1)
+        .withConverter<Message>(
+      fromFirestore: (snapshot, _) => Message.fromJson(snapshot.data()!),
+      toFirestore: (discussion, _) => discussion.toJson(),
+    ).snapshots();
   }
 
 
@@ -176,7 +185,7 @@ class Discussion {
         else{
           titre = groupTitle ?? "Group Discussion";
         }
-        return Text(titre, style: TextConstants.defaultPrimary,);
+        return Text(titre, style: TextConstants.titlePrimary,);
       });
 
   }
