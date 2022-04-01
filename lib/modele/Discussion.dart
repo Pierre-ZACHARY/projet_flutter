@@ -20,27 +20,36 @@ class Discussion {
   //final List<dynamic> messagesIds; // trié par plus récent : les messages en début de liste sont ceux qui viennent d'arriver
   final List<dynamic> usersIds;
   final Map<dynamic, dynamic> lastMessageSeenByUsers;
+  final Map<dynamic, dynamic> lastTypingEventByUsers;
   final int type; // 0 = discussion entre 2 utilisateurs, 1 = discussion de groupe
   final String? imgUrl; // image du groupe si type 1
   final String? groupTitle; // titre du groupe si type 1
 
-  Discussion({required this.imgUrl, required this.groupTitle ,required this.discussion_id, required this.type, required this.lastMessageSeenByUsers, required this.usersIds});
+  Discussion({
+    required this.imgUrl,
+    required this.groupTitle ,
+    required this.discussion_id,
+    required this.type,
+    required this.lastMessageSeenByUsers,
+    required this.lastTypingEventByUsers,
+    required this.usersIds
+  });
   Discussion.fromJson(Map<String, Object?> json) : this(
       discussion_id: json['discussion_id']! as String,
-     // messagesIds: json['messagesIds']! as List<dynamic>,
       usersIds: json['usersIds']! as List<dynamic>,
       type: json['type']! as int,
-      lastMessageSeenByUsers: json['lastMessageSeenByUsers']! as Map<dynamic, dynamic>,
+      lastMessageSeenByUsers: (json['lastMessageSeenByUsers'] ?? {}) as Map<dynamic, dynamic>,
+      lastTypingEventByUsers: (json['lastTypingEventByUsers'] ?? {}) as Map<dynamic, dynamic>,
       groupTitle: json['groupTitle'] as String?,
       imgUrl: json['imgUrl'] as String?,
   );
   Map<String, Object?> toJson() {
     return {
       'discussion_id': discussion_id,
-      //'messagesIds': messagesIds,
       'usersIds': usersIds,
       'type': type,
       'lastMessageSeenByUsers': lastMessageSeenByUsers,
+      'lastTypingEventByUsers': lastTypingEventByUsers,
       'groupTitle': groupTitle,
       'imgUrl': imgUrl,
     };
@@ -302,7 +311,7 @@ class Discussion {
         type = 1;
       }
       discussion = Discussion(
-          discussion_id: discussionId, usersIds: usersIds, type: type, lastMessageSeenByUsers: {}, imgUrl: null, groupTitle: null);
+          discussion_id: discussionId, usersIds: usersIds, type: type, lastMessageSeenByUsers: {}, lastTypingEventByUsers: {}, imgUrl: null, groupTitle: null);
       discussionRef.doc(discussionId).set(discussion.toJson())
           .then((value) => print("discussion open"))
           .catchError((error) => print("Failed to open discussion: $error"));
@@ -326,5 +335,31 @@ class Discussion {
   Future<bool> isDiscussionMutedForCurrentUser() async{
     DiscussionsList userDiscussionList = await DiscussionsList.getDiscussionListSnapshotById(FirebaseAuth.instance.currentUser!.uid);
     return userDiscussionList.isDiscussionMuted(discussion_id);
+  }
+
+  Future<void> typingEventFromCurrentUser() async{
+    DocumentReference<Discussion> ref = getDiscussionReference(discussion_id);
+    FirebaseFirestore.instance.runTransaction((transaction) async {
+      DocumentSnapshot<Discussion> freshSnap = await transaction.get(ref);
+      Discussion freshData = freshSnap.data()!;
+      String userId = FirebaseAuth.instance.currentUser!.uid;
+      Timestamp? oldTyping = freshData.lastTypingEventByUsers[userId];
+      if(oldTyping==null || Timestamp.now().seconds-oldTyping.seconds>1){ // on fait qu'un update toutes les secondes c'est largement suffisant
+        freshData.lastTypingEventByUsers[userId] = DateTime.now();
+        transaction.update(freshSnap.reference, freshData.toJson());
+      }
+
+    });
+  }
+
+  Future<void> stopTypingFromCurrentUser() async{
+    DocumentReference<Discussion> ref = getDiscussionReference(discussion_id);
+    FirebaseFirestore.instance.runTransaction((transaction) async {
+      DocumentSnapshot<Discussion> freshSnap = await transaction.get(ref);
+      Discussion freshData = freshSnap.data()!;
+      String userId = FirebaseAuth.instance.currentUser!.uid;
+      freshData.lastTypingEventByUsers[userId] = null;
+      transaction.update(freshSnap.reference, freshData.toJson());
+    });
   }
 }
