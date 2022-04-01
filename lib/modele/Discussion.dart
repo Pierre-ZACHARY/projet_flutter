@@ -20,7 +20,6 @@ class Discussion {
   //final List<dynamic> messagesIds; // trié par plus récent : les messages en début de liste sont ceux qui viennent d'arriver
   final List<dynamic> usersIds;
   final Map<dynamic, dynamic> lastMessageSeenByUsers;
-  final Map<dynamic, dynamic> lastTypingEventByUsers;
   final int type; // 0 = discussion entre 2 utilisateurs, 1 = discussion de groupe
   final String? imgUrl; // image du groupe si type 1
   final String? groupTitle; // titre du groupe si type 1
@@ -31,7 +30,6 @@ class Discussion {
     required this.discussion_id,
     required this.type,
     required this.lastMessageSeenByUsers,
-    required this.lastTypingEventByUsers,
     required this.usersIds
   });
   Discussion.fromJson(Map<String, Object?> json) : this(
@@ -39,7 +37,6 @@ class Discussion {
       usersIds: json['usersIds']! as List<dynamic>,
       type: json['type']! as int,
       lastMessageSeenByUsers: (json['lastMessageSeenByUsers'] ?? {}) as Map<dynamic, dynamic>,
-      lastTypingEventByUsers: (json['lastTypingEventByUsers'] ?? {}) as Map<dynamic, dynamic>,
       groupTitle: json['groupTitle'] as String?,
       imgUrl: json['imgUrl'] as String?,
   );
@@ -49,7 +46,6 @@ class Discussion {
       'usersIds': usersIds,
       'type': type,
       'lastMessageSeenByUsers': lastMessageSeenByUsers,
-      'lastTypingEventByUsers': lastTypingEventByUsers,
       'groupTitle': groupTitle,
       'imgUrl': imgUrl,
     };
@@ -93,6 +89,7 @@ class Discussion {
 
   @action
   void updateLastMessageSeenForCurrentUser(String messageId){
+    // TODO mettre ça dans une collection à part
     DocumentReference<Discussion> ref = getDiscussionReference(discussion_id);
     String userId = FirebaseAuth.instance.currentUser!.uid;
     FirebaseFirestore.instance.runTransaction((transaction) async {
@@ -311,7 +308,7 @@ class Discussion {
         type = 1;
       }
       discussion = Discussion(
-          discussion_id: discussionId, usersIds: usersIds, type: type, lastMessageSeenByUsers: {}, lastTypingEventByUsers: {}, imgUrl: null, groupTitle: null);
+          discussion_id: discussionId, usersIds: usersIds, type: type, lastMessageSeenByUsers: {}, imgUrl: null, groupTitle: null);
       discussionRef.doc(discussionId).set(discussion.toJson())
           .then((value) => print("discussion open"))
           .catchError((error) => print("Failed to open discussion: $error"));
@@ -338,28 +335,12 @@ class Discussion {
   }
 
   Future<void> typingEventFromCurrentUser() async{
-    DocumentReference<Discussion> ref = getDiscussionReference(discussion_id);
-    FirebaseFirestore.instance.runTransaction((transaction) async {
-      DocumentSnapshot<Discussion> freshSnap = await transaction.get(ref);
-      Discussion freshData = freshSnap.data()!;
-      String userId = FirebaseAuth.instance.currentUser!.uid;
-      Timestamp? oldTyping = freshData.lastTypingEventByUsers[userId];
-      if(oldTyping==null || Timestamp.now().seconds-oldTyping.seconds>1){ // on fait qu'un update toutes les secondes c'est largement suffisant
-        freshData.lastTypingEventByUsers[userId] = DateTime.now();
-        transaction.update(freshSnap.reference, freshData.toJson());
-      }
-
-    });
+    String userId = FirebaseAuth.instance.currentUser!.uid;
+    await getDiscussionReference(discussion_id).collection("lastTypingEventByUsers").doc(userId).set({"lastType": Timestamp.now()});
   }
 
   Future<void> stopTypingFromCurrentUser() async{
-    DocumentReference<Discussion> ref = getDiscussionReference(discussion_id);
-    FirebaseFirestore.instance.runTransaction((transaction) async {
-      DocumentSnapshot<Discussion> freshSnap = await transaction.get(ref);
-      Discussion freshData = freshSnap.data()!;
-      String userId = FirebaseAuth.instance.currentUser!.uid;
-      freshData.lastTypingEventByUsers[userId] = null;
-      transaction.update(freshSnap.reference, freshData.toJson());
-    });
+    String userId = FirebaseAuth.instance.currentUser!.uid;
+    await getDiscussionReference(discussion_id).collection("lastTypingEventByUsers").doc(userId).set({"lastType": null});
   }
 }

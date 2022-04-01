@@ -112,6 +112,7 @@ class _ChatRoomState extends State<ChatRoom>{
                     children: [
                       Expanded(
                         child: StreamBuilder<DocumentSnapshot<Discussion>>(
+                          // TODO recup le nouveau stream de last seen msg
                           stream: Discussion.getDiscussionStream(msg.discussionId),
                           builder: (context, snapshot) {
                             if(!snapshot.hasData || snapshot.hasError){
@@ -236,20 +237,24 @@ class _ChatRoomState extends State<ChatRoom>{
   void initState() {
     super.initState();
 
-    Discussion.getDiscussionStream(widget.discussionId).listen((DocumentSnapshot<Discussion> event) {
-      if(event.exists){
-        Discussion d = event.data()!;
+    Discussion.getDiscussionReference(widget.discussionId).collection("lastTypingEventByUsers").snapshots().listen(( QuerySnapshot<Map<String, dynamic>> event) {
 
-        for(String userid in d.usersIds){
-          Timestamp? timestamp = d.lastTypingEventByUsers[userid];
-          if(timestamp == null){
+        bool changed = false;
+        for(QueryDocumentSnapshot<Map<String, dynamic>> entry in event.docs){
+          String userid = entry.id;
+          Timestamp? timestamp = entry.data()["lastType"];
+          if(timestamp == null && (typingUsers[userid] ?? true)){
             typingUsers[userid] = false;
             setState(() => {});
+            changed = true;
           }
-          else if( Timestamp.now().seconds-timestamp.seconds<3) {
+          else if( timestamp != null && Timestamp.now().seconds-timestamp.seconds<3) {
             typingUsers[userid] = true;
             if(_typingUsersTimer[userid] !=null && _typingUsersTimer[userid]!.isActive){
               _typingUsersTimer[userid]!.cancel();
+            }
+            else{
+              changed = true;
             }
             _typingUsersTimer[userid] = Timer(const Duration(seconds: 3), () => {
             typingUsers[userid] = false,
@@ -258,10 +263,14 @@ class _ChatRoomState extends State<ChatRoom>{
           }
         }
 
-        setState(() {
-        });
+        if(changed){
+          setState(() {
+          });
+        }
 
-    }});
+
+      }
+    );
 
     _controller.addListener(_scrollListener);
 
@@ -295,6 +304,7 @@ class _ChatRoomState extends State<ChatRoom>{
                 backgroundColor: ColorConstants.backgroundHighlight,
                 title: Row(
                   children: [
+                    // TODO changer ça pour plus avoir le petit freeze à chaque reload
                     StreamBuilder<DocumentSnapshot<Discussion>>(
                       stream: Discussion.getDiscussionStream(widget.discussionId),
                       builder: (context, snapshot) {
