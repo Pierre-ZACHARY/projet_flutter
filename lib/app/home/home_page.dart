@@ -6,16 +6,12 @@ import 'package:projet_flutter/app/home/chats/chat_page.dart';
 import 'package:projet_flutter/app/home/profile/profile_page.dart';
 import 'package:projet_flutter/utils/cloudStorageUtils.dart';
 import 'package:projet_flutter/utils/constant.dart';
+import 'package:projet_flutter/utils/notification_service.dart';
 
 import '/modele/Bandnames.dart';
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage(BuildContext context, User user, {Key? key, required this.title}) : super(key: key) {
-    print(user.email);
-    print(user.emailVerified);
-    print(user.displayName);
-    print(user.uid);
-  }
+  const MyHomePage(BuildContext context, User user, {Key? key, required this.title}) : super(key: key);
   final String title;
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -44,6 +40,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    NotificationService.initialize();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: ColorConstants.backgroundHighlight,

@@ -63,6 +63,10 @@ class Userinfo{
     return uinfo;
   }
 
+  static Future<void> saveToken(String? token, String userID) async {
+    return await firestoreCollectionReference().doc(userID).update({'token': token});
+  }
+
   static Query<Userinfo> searchUser(String displayName){
     return FirebaseFirestore.instance
         .collection('users')

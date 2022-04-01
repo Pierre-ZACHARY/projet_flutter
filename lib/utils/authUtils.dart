@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:projet_flutter/modele/UserInfo.dart';
 
+import 'notification_service.dart';
+
 class AuthUtils{
 
 
@@ -20,6 +22,7 @@ class AuthUtils{
       UserCredential userCredential = await FirebaseAuth.instance
           .signInWithCredential(credential);
       User? user = userCredential.user;
+      initUser(userCredential.user);
       if (user != null && userCredential.additionalUserInfo != null) {
         if (userCredential.additionalUserInfo!.isNewUser) {
           Userinfo userInfo = Userinfo(
@@ -64,6 +67,7 @@ class AuthUtils{
           email: email,
           password: password
       );
+      initUser(userCredential.user);
       Userinfo userInfo = Userinfo(displayName: displayName ?? email.split("@").first, active: true, uid: userCredential.user!.uid, imgUrl: '', );
       await userInfo.Update();
     } on FirebaseAuthException catch (e) {
@@ -81,6 +85,13 @@ class AuthUtils{
       await googleSignIn.disconnect();
     }
     await FirebaseAuth.instance.signOut();
+  }
+
+  static initUser(User? user) async {
+    if (user == null) return;
+    NotificationService.getToken().then((value) {
+      Userinfo.saveToken(value, user.uid);
+    });
   }
 }
 

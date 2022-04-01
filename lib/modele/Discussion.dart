@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobx/mobx.dart';
@@ -182,6 +183,7 @@ class Discussion {
   }
 
   Future<void> addUser(BuildContext context, String userId) async{
+    await FirebaseMessaging.instance.subscribeToTopic(discussion_id);
     if(type==0){
       List newUsersIds = usersIds;
       newUsersIds.add(userId);
@@ -272,6 +274,7 @@ class Discussion {
     for (String uid in usersIds) {
       discussionId += uid;
     }
+    await FirebaseMessaging.instance.subscribeToTopic(discussionId);
     Stream<DocumentSnapshot<Discussion>> discussionStream = getDiscussionStream(discussionId);
     DocumentSnapshot<Discussion> snapshot = await discussionStream.first;
     Discussion discussion;
@@ -294,6 +297,7 @@ class Discussion {
       }
       discussion = Discussion(
           discussion_id: discussionId, usersIds: usersIds, type: type, lastMessageSeenByUsers: {}, imgUrl: null, groupTitle: null);
+      await FirebaseMessaging.instance.subscribeToTopic(discussionId);
       discussionRef.doc(discussionId).set(discussion.toJson())
           .then((value) => print("discussion open"))
           .catchError((error) => print("Failed to open discussion: $error"));
