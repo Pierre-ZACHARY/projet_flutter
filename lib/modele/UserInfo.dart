@@ -29,9 +29,10 @@ class Userinfo{
     };
   }
 
-  Widget getCircleAvatar(){
+  Widget getCircleAvatar({double? radius = null}){
     return CircleAvatar(
       backgroundColor: Colors.white,
+      radius:  radius,
       backgroundImage: AssetImage('assets/images/default-profile-picture.png'),
       foregroundImage: NetworkImage(imgUrl),
     );

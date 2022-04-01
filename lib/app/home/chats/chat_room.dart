@@ -92,8 +92,50 @@ class _ChatRoomState extends State<ChatRoom>{
               }
               return ListTile(
                   contentPadding: const EdgeInsets.all(0),
-                  // TODO mettre en subtitle les personnes qui ont vu les messages dans la liste "lastMessageSeen" de discussion
-                  //subtitle: Text(""),
+                  subtitle: Row(
+
+                    children: [
+                      Expanded(
+                        child: StreamBuilder<DocumentSnapshot<Discussion>>(
+                          stream: Discussion.getDiscussionStream(msg.discussionId),
+                          builder: (context, snapshot) {
+                            if(!snapshot.hasData || snapshot.hasError){
+                              return Row();
+                            }
+                            Discussion d = snapshot.data!.data()!;
+                            List<Widget> widgets = [];
+                            for(MapEntry entry in d.lastMessageSeenByUsers.entries){
+                              if(entry.value == msg.messageId){
+                                widgets.add(
+                                  StreamBuilder<DocumentSnapshot<Userinfo>>(
+                                    stream: Userinfo.getUserDocumentStream(entry.key),
+                                    builder: (context, snapshot) {
+                                      if(!snapshot.hasData || snapshot.hasError){
+                                        return Text("");
+                                      }
+                                      Userinfo u = snapshot.data!.data()!;
+
+                                      Widget res = isCurrentUser ?  Padding(
+                                        padding: const EdgeInsets.fromLTRB(0, 0, 8, 0),
+                                        child: u.getCircleAvatar(radius: 10.0),
+                                      ) : Padding(
+                                        padding: const EdgeInsets.fromLTRB(8, 0, 0, 0),
+                                        child: u.getCircleAvatar(radius: 10.0),
+                                      );
+                                      return res;
+                                    }
+                                  )
+                                );
+                              }
+                            }
+                            return Row(
+                              mainAxisAlignment: isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+                              children: widgets);
+                          }
+                        ),
+                      ),
+                    ],
+                  ),
                   title: CupertinoOptions(body: Row(
                     mainAxisAlignment: isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
                     children: [
