@@ -93,6 +93,8 @@ class DiscussionsList{
       }
       transaction.update(freshSnap.reference, freshData.toJson());
     });
+
+    // TODO subscribe uid au topic discussionId
   }
 
   Future<void> unmuteDiscussion(String discussionId) async{
@@ -105,6 +107,7 @@ class DiscussionsList{
       }
       transaction.update(freshSnap.reference, freshData.toJson());
     });
+    // TODO unsubscribe uid au topic discussionId
   }
 
   bool isDiscussionMuted(String discussionId){
