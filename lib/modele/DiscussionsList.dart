@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class DiscussionsList{
   // chaque utilisateur possède une liste de discussion
@@ -93,8 +94,7 @@ class DiscussionsList{
       }
       transaction.update(freshSnap.reference, freshData.toJson());
     });
-
-    // TODO subscribe uid au topic discussionId
+    await FirebaseMessaging.instance.unsubscribeFromTopic(discussionId);
   }
 
   Future<void> unmuteDiscussion(String discussionId) async{
@@ -107,7 +107,7 @@ class DiscussionsList{
       }
       transaction.update(freshSnap.reference, freshData.toJson());
     });
-    // TODO unsubscribe uid au topic discussionId
+    await FirebaseMessaging.instance.subscribeToTopic(discussionId);
   }
 
   bool isDiscussionMuted(String discussionId){

@@ -120,7 +120,28 @@ class _ChatPageState extends State<ChatPage>{
             children: [
               // A SlidableAction can have an icon and/or a label.
               SlidableAction(
-                onPressed: (context) {},
+                onPressed: (context) async {
+                  await discussion.isDiscussionMutedForCurrentUser().then((value) async {
+                    final scaffold = ScaffoldMessenger.of(context);
+                    if (value) {
+                      scaffold.showSnackBar(
+                        SnackBar(
+                          content: const Text('Discussion unmuted'),
+                          action: SnackBarAction(label: 'OK', onPressed: scaffold.hideCurrentSnackBar),
+                        ),
+                      );
+                      await discussion.unmuteDiscussionForCurrentUser();
+                    } else {
+                      scaffold.showSnackBar(
+                        SnackBar(
+                          content: const Text('Discussion muted'),
+                          action: SnackBarAction(label: 'OK', onPressed: scaffold.hideCurrentSnackBar),
+                        ),
+                      );
+                      await discussion.muteDiscussionForCurrentUser();
+                    }
+                  });
+                },
                 backgroundColor: Colors.orange,
                 foregroundColor: Colors.white,
                 icon: Icons.volume_mute,
