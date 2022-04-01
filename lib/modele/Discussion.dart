@@ -25,20 +25,25 @@ class Discussion {
   final String? imgUrl; // image du groupe si type 1
   final String? groupTitle; // titre du groupe si type 1
 
-  Discussion({required this.imgUrl, required this.groupTitle ,required this.discussion_id, required this.type, required this.lastMessageSeenByUsers, required this.usersIds});
+  Discussion({
+    required this.imgUrl,
+    required this.groupTitle ,
+    required this.discussion_id,
+    required this.type,
+    required this.lastMessageSeenByUsers,
+    required this.usersIds
+  });
   Discussion.fromJson(Map<String, Object?> json) : this(
       discussion_id: json['discussion_id']! as String,
-     // messagesIds: json['messagesIds']! as List<dynamic>,
       usersIds: json['usersIds']! as List<dynamic>,
       type: json['type']! as int,
-      lastMessageSeenByUsers: json['lastMessageSeenByUsers']! as Map<dynamic, dynamic>,
+      lastMessageSeenByUsers: (json['lastMessageSeenByUsers'] ?? {}) as Map<dynamic, dynamic>,
       groupTitle: json['groupTitle'] as String?,
       imgUrl: json['imgUrl'] as String?,
   );
   Map<String, Object?> toJson() {
     return {
       'discussion_id': discussion_id,
-      //'messagesIds': messagesIds,
       'usersIds': usersIds,
       'type': type,
       'lastMessageSeenByUsers': lastMessageSeenByUsers,
@@ -57,7 +62,7 @@ class Discussion {
         discussionList.addDiscussion(discussion_id);
       }
       else{
-        DiscussionsList newDiscussionList = DiscussionsList(uid: userid, discussionsIds: [discussion_id],);
+        DiscussionsList newDiscussionList = DiscussionsList(uid: userid, discussionsIds: [discussion_id], mutedDiscussionIds: []);
         CollectionReference discussionListref = DiscussionsList.discussionsListRef();
         discussionListref.doc(userid).set(newDiscussionList.toJson())
             .then((value) => print("discussionList created"))
@@ -71,14 +76,12 @@ class Discussion {
     String userId = FirebaseAuth.instance.currentUser!.uid;
     await Message.newMessage(userId: userId, discussionId: discussion_id, type: 0, messageContent: messageContent);
     await setDiscussionInFirstPosition();
-    // TODO send push notif
   }
 
   Future<void> sendImageFromCurrentUser(File imageFile) async{
     String userid = FirebaseAuth.instance.currentUser!.uid;
     await Message.newMessage(userId: userid, discussionId: discussion_id, type: 1, messageContent: "Contient image", image: imageFile);
     await setDiscussionInFirstPosition();
-    // TODO send push notif
   }
 
   void sendStickersFromCurrentUser(String StickersIds){
@@ -87,6 +90,7 @@ class Discussion {
 
   @action
   void updateLastMessageSeenForCurrentUser(String messageId){
+    // TODO mettre ça dans une collection à part
     DocumentReference<Discussion> ref = getDiscussionReference(discussion_id);
     String userId = FirebaseAuth.instance.currentUser!.uid;
     FirebaseFirestore.instance.runTransaction((transaction) async {
@@ -97,6 +101,17 @@ class Discussion {
         'lastMessageSeenByUsers': localLastMessageSeenByUsers,
       });
     });
+  }
+
+  Stream<QuerySnapshot<Message>> getLastMessageStream(){
+    return Message.firestoreCollectionReference()
+        .where('discussionId', isEqualTo: discussion_id)
+        .orderBy('sendDatetime', descending: true)
+        .limit(1)
+        .withConverter<Message>(
+      fromFirestore: (snapshot, _) => Message.fromJson(snapshot.data()!),
+      toFirestore: (discussion, _) => discussion.toJson(),
+    ).snapshots();
   }
 
 
@@ -177,7 +192,7 @@ class Discussion {
         else{
           titre = groupTitle ?? "Group Discussion";
         }
-        return Text(titre, style: TextConstants.defaultPrimary,);
+        return Text(titre, style: TextConstants.titlePrimary,);
       });
 
   }
@@ -308,4 +323,28 @@ class Discussion {
   }
 
 
+  Future<void> muteDiscussionForCurrentUser() async{
+    DiscussionsList userDiscussionList = await DiscussionsList.getDiscussionListSnapshotById(FirebaseAuth.instance.currentUser!.uid);
+    await userDiscussionList.muteDiscussion(discussion_id);
+  }
+
+  Future<void> unmuteDiscussionForCurrentUser() async{
+    DiscussionsList userDiscussionList = await DiscussionsList.getDiscussionListSnapshotById(FirebaseAuth.instance.currentUser!.uid);
+    await userDiscussionList.unmuteDiscussion(discussion_id);
+  }
+
+  Future<bool> isDiscussionMutedForCurrentUser() async{
+    DiscussionsList userDiscussionList = await DiscussionsList.getDiscussionListSnapshotById(FirebaseAuth.instance.currentUser!.uid);
+    return userDiscussionList.isDiscussionMuted(discussion_id);
+  }
+
+  Future<void> typingEventFromCurrentUser() async{
+    String userId = FirebaseAuth.instance.currentUser!.uid;
+    await getDiscussionReference(discussion_id).collection("lastTypingEventByUsers").doc(userId).set({"lastType": Timestamp.now()});
+  }
+
+  Future<void> stopTypingFromCurrentUser() async{
+    String userId = FirebaseAuth.instance.currentUser!.uid;
+    await getDiscussionReference(discussion_id).collection("lastTypingEventByUsers").doc(userId).set({"lastType": null});
+  }
 }

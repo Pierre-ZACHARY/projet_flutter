@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -8,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobx/mobx.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:projet_flutter/app/home/chats/TypingIndicator.dart';
 import 'package:projet_flutter/app/home/chats/chat_room_param.dart';
 import 'package:projet_flutter/app/home/chats/cupertino_options.dart';
 import 'package:projet_flutter/modele/Discussion.dart';
@@ -45,8 +47,21 @@ class _ChatRoomState extends State<ChatRoom>{
       DocumentReference<Discussion> ref = Discussion.getDiscussionReference(widget.discussionId);
       DocumentSnapshot<Discussion> snapshot = await ref.get();
       Discussion discussion = snapshot.data()!;
+      await discussion.stopTypingFromCurrentUser();
       await discussion.sendMessageFromCurrentUser(text);
       sendMessageController.text = "";
+    }
+  }
+
+  Future<void> typeEvent(String value) async{
+    DocumentReference<Discussion> ref = Discussion.getDiscussionReference(widget.discussionId);
+    DocumentSnapshot<Discussion> snapshot = await ref.get();
+    Discussion discussion = snapshot.data()!;
+    if(value != ""){
+      await discussion.typingEventFromCurrentUser();
+    }
+    else{
+      await discussion.stopTypingFromCurrentUser();
     }
   }
 
@@ -92,8 +107,51 @@ class _ChatRoomState extends State<ChatRoom>{
               }
               return ListTile(
                   contentPadding: const EdgeInsets.all(0),
-                  // TODO mettre en subtitle les personnes qui ont vu les messages dans la liste "lastMessageSeen" de discussion
-                  //subtitle: Text(""),
+                  subtitle: Row(
+
+                    children: [
+                      Expanded(
+                        child: StreamBuilder<DocumentSnapshot<Discussion>>(
+                          // TODO recup le nouveau stream de last seen msg
+                          stream: Discussion.getDiscussionStream(msg.discussionId),
+                          builder: (context, snapshot) {
+                            if(!snapshot.hasData || snapshot.hasError){
+                              return Row();
+                            }
+                            Discussion d = snapshot.data!.data()!;
+                            List<Widget> widgets = [];
+                            for(MapEntry entry in d.lastMessageSeenByUsers.entries){
+                              if(entry.value == msg.messageId){
+                                widgets.add(
+                                  StreamBuilder<DocumentSnapshot<Userinfo>>(
+                                    stream: Userinfo.getUserDocumentStream(entry.key),
+                                    builder: (context, snapshot) {
+                                      if(!snapshot.hasData || snapshot.hasError){
+                                        return Text("");
+                                      }
+                                      Userinfo u = snapshot.data!.data()!;
+
+                                      Widget res = isCurrentUser ?  Padding(
+                                        padding: const EdgeInsets.fromLTRB(0, 0, 8, 0),
+                                        child: u.getCircleAvatar(radius: 10.0),
+                                      ) : Padding(
+                                        padding: const EdgeInsets.fromLTRB(8, 0, 0, 0),
+                                        child: u.getCircleAvatar(radius: 10.0),
+                                      );
+                                      return res;
+                                    }
+                                  )
+                                );
+                              }
+                            }
+                            return Row(
+                              mainAxisAlignment: isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+                              children: widgets);
+                          }
+                        ),
+                      ),
+                    ],
+                  ),
                   title: CupertinoOptions(body: Row(
                     mainAxisAlignment: isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
                     children: [
@@ -168,9 +226,52 @@ class _ChatRoomState extends State<ChatRoom>{
 
   ScrollController _controller = ScrollController();
 
+
+  List<Pair> savedWidgetInstance = [];
+
+  Map<String, bool> typingUsers = {};
+  Map<String, Timer> _typingUsersTimer = {};
+
+
   @override
   void initState() {
     super.initState();
+
+    Discussion.getDiscussionReference(widget.discussionId).collection("lastTypingEventByUsers").snapshots().listen(( QuerySnapshot<Map<String, dynamic>> event) {
+
+        bool changed = false;
+        for(QueryDocumentSnapshot<Map<String, dynamic>> entry in event.docs){
+          String userid = entry.id;
+          Timestamp? timestamp = entry.data()["lastType"];
+          if(timestamp == null && (typingUsers[userid] ?? true)){
+            typingUsers[userid] = false;
+            setState(() => {});
+            changed = true;
+          }
+          else if( timestamp != null && Timestamp.now().seconds-timestamp.seconds<3) {
+            typingUsers[userid] = true;
+            if(_typingUsersTimer[userid] !=null && _typingUsersTimer[userid]!.isActive){
+              _typingUsersTimer[userid]!.cancel();
+            }
+            else{
+              changed = true;
+            }
+            _typingUsersTimer[userid] = Timer(const Duration(seconds: 3), () => {
+            typingUsers[userid] = false,
+            setState(() => {}),
+            });
+          }
+        }
+
+        if(changed){
+          setState(() {
+          });
+        }
+
+
+      }
+    );
+
     _controller.addListener(_scrollListener);
 
     //_controller.jumpTo(position?.pixels ?? 0);
@@ -185,11 +286,15 @@ class _ChatRoomState extends State<ChatRoom>{
   }
 
 
-  List<Pair> savedWidgetInstance = [];
-
 
   @override
   Widget build(BuildContext context) {
+
+    List<Widget> typingIndicators = [];
+
+    for(int i = 0; i < typingUsers.length; i++){
+      typingIndicators.add(Center(child: TypingIndicator(userId: typingUsers.keys.elementAt(i), showIndicator: typingUsers[typingUsers.keys.elementAt(i)] ?? false)));
+    }
 
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
@@ -199,6 +304,7 @@ class _ChatRoomState extends State<ChatRoom>{
                 backgroundColor: ColorConstants.backgroundHighlight,
                 title: Row(
                   children: [
+                    // TODO changer ça pour plus avoir le petit freeze à chaque reload
                     StreamBuilder<DocumentSnapshot<Discussion>>(
                       stream: Discussion.getDiscussionStream(widget.discussionId),
                       builder: (context, snapshot) {
@@ -236,55 +342,68 @@ class _ChatRoomState extends State<ChatRoom>{
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
 
-                            child: StreamBuilder<QuerySnapshot<Message>>(
-                              stream: FirebaseFirestore.instance
-                                  .collection('messages')
-                                  .where('discussionId', isEqualTo: widget.discussionId)
-                                  .orderBy('sendDatetime', descending: true)
-                                  .limit(_messageNumber)
-                                  .withConverter<Message>(
-                                    fromFirestore: (snapshot, _) => Message.fromJson(snapshot.data()!),
-                                    toFirestore: (discussion, _) => discussion.toJson(),
-                                  )
-                                  .snapshots(),
-                              builder: (context, snapshot) {
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: StreamBuilder<QuerySnapshot<Message>>(
+                                    stream: FirebaseFirestore.instance
+                                        .collection('messages')
+                                        .where('discussionId', isEqualTo: widget.discussionId)
+                                        .orderBy('sendDatetime', descending: true)
+                                        .limit(_messageNumber)
+                                        .withConverter<Message>(
+                                          fromFirestore: (snapshot, _) => Message.fromJson(snapshot.data()!),
+                                          toFirestore: (discussion, _) => discussion.toJson(),
+                                        )
+                                        .snapshots(),
+                                    builder: (context, snapshot) {
 
-                                if( snapshot.hasData && snapshot.data!.docs.isNotEmpty){
-                                  setLastMessageSeen( snapshot.data!.docs[0].data().messageId);
-                                  List<String> allIds = [];
-                                  for(Pair p in savedWidgetInstance){
-                                    allIds.add(p.msgId);
-                                  }
-                                  for(int i = 0; i<snapshot.data!.docs.length; i++){
-                                    Message m = snapshot.data!.docs[i].data();
-                                    if( i > savedWidgetInstance.length-1){
-                                      savedWidgetInstance.add(Pair(m.messageId, _buildMessageTileContent(context, m)));
+                                      if( snapshot.hasData && snapshot.data!.docs.isNotEmpty){
+                                        setLastMessageSeen( snapshot.data!.docs[0].data().messageId);
+                                        List<String> allIds = [];
+                                        for(Pair p in savedWidgetInstance){
+                                          allIds.add(p.msgId);
+                                        }
+                                        for(int i = 0; i<snapshot.data!.docs.length; i++){
+                                          Message m = snapshot.data!.docs[i].data();
+                                          if( i > savedWidgetInstance.length-1){
+                                            savedWidgetInstance.add(Pair(m.messageId, _buildMessageTileContent(context, m)));
+                                          }
+                                          else if( !allIds.contains(m.messageId)) { // nouveau message
+                                            savedWidgetInstance.insert(i, Pair(m.messageId, _buildMessageTileContent(context, m)));
+                                          }
+                                          if(m.messageId != savedWidgetInstance[i].msgId){
+                                            print("id différent ? :" + m.messageId+ " / "+  savedWidgetInstance[i].msgId);
+                                          }
+                                        }
+                                      }
+                                      if (savedWidgetInstance.isEmpty) {
+                                        return const Center(child: CircularProgressIndicator());
+                                      }
+                                      return ListView.builder(
+                                        key: const PageStorageKey('const name here'),
+                                        scrollDirection: Axis.vertical,
+                                        reverse: true,
+                                        controller: _controller,
+                                        itemCount: savedWidgetInstance.length,
+                                        itemBuilder: (context, index) {
+                                            return savedWidgetInstance[index].msgWidget;
+                                          },
+                                      );
                                     }
-                                    else if( !allIds.contains(m.messageId)) { // nouveau message
-                                      savedWidgetInstance.insert(i, Pair(m.messageId, _buildMessageTileContent(context, m)));
-                                    }
-                                    if(m.messageId != savedWidgetInstance[i].msgId){
-                                      print("id différent ? :" + m.messageId+ " / "+  savedWidgetInstance[i].msgId);
-                                    }
-                                  }
-                                }
-                                if (savedWidgetInstance.isEmpty) {
-                                  return const Center(child: CircularProgressIndicator());
-                                }
-                                return ListView.builder(
-                                  key: const PageStorageKey('const name here'),
-                                  scrollDirection: Axis.vertical,
-                                  reverse: true,
-                                  controller: _controller,
-                                  itemCount: savedWidgetInstance.length,
-                                  itemBuilder: (context, index) {
-                                      return savedWidgetInstance[index].msgWidget;
-                                    },
-                                );
-                              }
+                                  ),
+                                ),
+
+                                Center(
+                                  child: Column(
+                                    children: typingIndicators,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
+
 
                       Row(
                         children: [
@@ -297,6 +416,7 @@ class _ChatRoomState extends State<ChatRoom>{
                               controller: sendMessageController,
                               onEditingComplete:() => sendMsg(),
                               style: TextConstants.defaultPrimary,
+                              onChanged: (value) => typeEvent(value),
                               decoration: const InputDecoration(
                                 hintText: "Message...",
                                   hintStyle: TextConstants.defaultPrimary
