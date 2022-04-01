@@ -9,13 +9,19 @@ class DiscussionsList{
 
   final String uid;
   final List<dynamic> discussionsIds;
-  DiscussionsList({required this.uid, required this.discussionsIds});
+  final List<dynamic> mutedDiscussionIds;
+  DiscussionsList({required this.uid, required this.discussionsIds, required this.mutedDiscussionIds});
 
-  DiscussionsList.fromJson(Map<String, Object?> json) : this(uid: json['uid']! as String, discussionsIds: json['discussionsIds']! as List<dynamic> );
+  DiscussionsList.fromJson(Map<String, Object?> json) : this(
+      uid: json['uid']! as String,
+      discussionsIds: json['discussionsIds']! as List<dynamic>,
+      mutedDiscussionIds: (json['mutedDiscussionIds'] ?? []) as List<dynamic>
+  );
   Map<String, Object?> toJson() {
     return {
       'uid': uid,
       'discussionsIds': discussionsIds,
+      'mutedDiscussionIds' : mutedDiscussionIds
     };
   }
 
@@ -76,4 +82,32 @@ class DiscussionsList{
         .catchError((error) => print("Failed to add discussion: $error"));
   }
 
+  
+  Future<void> muteDiscussion(String discussionId) async{
+    DocumentReference<DiscussionsList> ref = getDiscussionListReference(uid);
+    FirebaseFirestore.instance.runTransaction((transaction) async {
+      DocumentSnapshot<DiscussionsList> freshSnap = await transaction.get(ref);
+      DiscussionsList freshData = freshSnap.data()!;
+      if(!freshData.mutedDiscussionIds.contains(discussionId)){
+        freshData.mutedDiscussionIds.add(discussionId);
+      }
+      transaction.update(freshSnap.reference, freshData.toJson());
+    });
+  }
+
+  Future<void> unmuteDiscussion(String discussionId) async{
+    DocumentReference<DiscussionsList> ref = getDiscussionListReference(uid);
+    FirebaseFirestore.instance.runTransaction((transaction) async {
+      DocumentSnapshot<DiscussionsList> freshSnap = await transaction.get(ref);
+      DiscussionsList freshData = freshSnap.data()!;
+      if(freshData.mutedDiscussionIds.contains(discussionId)){
+        freshData.mutedDiscussionIds.remove(discussionId);
+      }
+      transaction.update(freshSnap.reference, freshData.toJson());
+    });
+  }
+
+  bool isDiscussionMuted(String discussionId){
+    return mutedDiscussionIds.contains(discussionId);
+  }
 }

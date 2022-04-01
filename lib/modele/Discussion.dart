@@ -56,7 +56,7 @@ class Discussion {
         discussionList.addDiscussion(discussion_id);
       }
       else{
-        DiscussionsList newDiscussionList = DiscussionsList(uid: userid, discussionsIds: [discussion_id],);
+        DiscussionsList newDiscussionList = DiscussionsList(uid: userid, discussionsIds: [discussion_id], mutedDiscussionIds: []);
         CollectionReference discussionListref = DiscussionsList.discussionsListRef();
         discussionListref.doc(userid).set(newDiscussionList.toJson())
             .then((value) => print("discussionList created"))
@@ -313,4 +313,18 @@ class Discussion {
   }
 
 
+  Future<void> muteDiscussionForCurrentUser() async{
+    DiscussionsList userDiscussionList = await DiscussionsList.getDiscussionListSnapshotById(FirebaseAuth.instance.currentUser!.uid);
+    await userDiscussionList.muteDiscussion(discussion_id);
+  }
+
+  Future<void> unmuteDiscussionForCurrentUser() async{
+    DiscussionsList userDiscussionList = await DiscussionsList.getDiscussionListSnapshotById(FirebaseAuth.instance.currentUser!.uid);
+    await userDiscussionList.unmuteDiscussion(discussion_id);
+  }
+
+  Future<bool> isDiscussionMutedForCurrentUser() async{
+    DiscussionsList userDiscussionList = await DiscussionsList.getDiscussionListSnapshotById(FirebaseAuth.instance.currentUser!.uid);
+    return userDiscussionList.isDiscussionMuted(discussion_id);
+  }
 }
