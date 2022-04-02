@@ -14,7 +14,6 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
 
-  // TODO Ajouter Google / apple Sign up, Ajouter retour d'actions ( spinner ou barre de chargement ... ), gérer les erreurs retourner par login /register
   // voir https://medium.com/flutter-community/make-progress-button-in-flutter-d4e2d27bd1d7 pour le chargement du bouton login par ex
 
   String email = "", password = "", username = "";

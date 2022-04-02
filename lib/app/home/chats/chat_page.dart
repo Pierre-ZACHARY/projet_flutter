@@ -79,30 +79,37 @@ class _ChatPageState extends State<ChatPage>{
                       stream: discussion.getAllMessagesStream(),
                       builder: (context, snapshot) {
                         String userId = FirebaseAuth.instance.currentUser!.uid;
-                        String? msgId = discussion.lastMessageSeenByUsers[userId];
-                        int unseennumber ;
                         if(!snapshot.hasData){
-                          unseennumber = 0;
+                          return Row();
                         }
-                        else{
-                          unseennumber = snapshot.data!.docs.length;
-                          for(int i = 0; i<snapshot.data!.docs.length; i++){
-                            if(snapshot.data!.docs[i].data().messageId == msgId){
-                              unseennumber = i;
-                              break;
-                            }
-                          }
-                        }
-
-                        return unseennumber > 0 ? Container(
-                          padding: const EdgeInsets.only(left: 5, right: 5),
-                          decoration: const BoxDecoration(
-                              color: ColorConstants.backgroundHighlight,
-                              borderRadius: BorderRadius.all(Radius.circular(20))
-                          ),
-                          child: Text(unseennumber.toString(),
-                            style: TextConstants.defaultPrimary,),
-                        ): Row();
+                        return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                            stream: Discussion.getDiscussionReference(discussion.discussion_id).collection("lastMessageSeenByUsers").doc(userId).snapshots(),
+                            builder: (context, snapshotLastSeen) {
+                              int unseennumber ;
+                              if(!snapshotLastSeen.hasData){
+                                unseennumber = 0;
+                              }
+                              else{
+                                Map<String, dynamic> map = snapshotLastSeen.data!.data()!;
+                                String msgId = map["messageId"];
+                                unseennumber = snapshot.data!.docs.length;
+                                for(int i = 0; i<snapshot.data!.docs.length; i++){
+                                  if(snapshot.data!.docs[i].data().messageId == msgId){
+                                    unseennumber = i;
+                                    break;
+                                  }
+                                }
+                              }
+                              return unseennumber > 0 ? Container(
+                                padding: const EdgeInsets.only(left: 5, right: 5),
+                                decoration: const BoxDecoration(
+                                    color: ColorConstants.backgroundHighlight,
+                                    borderRadius: BorderRadius.all(Radius.circular(20))
+                                ),
+                                child: Text(unseennumber.toString(),
+                                  style: TextConstants.defaultPrimary,),
+                              ): Row();
+                            });
                       }
                   ),
                 ],

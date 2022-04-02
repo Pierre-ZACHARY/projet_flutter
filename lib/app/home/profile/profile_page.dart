@@ -129,7 +129,6 @@ class _ProfilePageState extends State<ProfilePage>{
                             style: ButtonStyle(
                               backgroundColor: MaterialStateProperty.all(ColorConstants.secondary),
                             ),
-                            //TODO settings pour activer / désativer le mode public, plus tard settings pour activer / désactiver les push notif
                             onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (context) => SettingPage())); },
                             child: const Text("Settings", style: TextConstants.defaultSecondary)),
                       )

@@ -84,6 +84,8 @@ class _ChatRoomState extends State<ChatRoom>{
     discussion.updateLastMessageSeenForCurrentUser(id);
   }
 
+  Map<String, Widget> lastSeenIndicatorWidgetByUserId = {};
+
   Widget _buildMessageTileContent(BuildContext context, Message msgTemp){
     Message msg = msgTemp;
     Stream<DocumentSnapshot<Userinfo>> userinfoStream = Userinfo.getUserDocumentStream(msg.userId);
@@ -111,23 +113,24 @@ class _ChatRoomState extends State<ChatRoom>{
 
                     children: [
                       Expanded(
-                        child: StreamBuilder<DocumentSnapshot<Discussion>>(
-                          // TODO recup le nouveau stream de last seen msg
-                          stream: Discussion.getDiscussionStream(msg.discussionId),
+                        child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                          stream: Discussion.getDiscussionReference(widget.discussionId)
+                              .collection("lastMessageSeenByUsers")
+                              .where("messageId", isEqualTo: msg.messageId)
+                              .snapshots(),
                           builder: (context, snapshot) {
                             if(!snapshot.hasData || snapshot.hasError){
                               return Row();
                             }
-                            Discussion d = snapshot.data!.data()!;
+                            List<QueryDocumentSnapshot<Map<String, dynamic>>> data = snapshot.data!.docs;
                             List<Widget> widgets = [];
-                            for(MapEntry entry in d.lastMessageSeenByUsers.entries){
-                              if(entry.value == msg.messageId){
-                                widgets.add(
-                                  StreamBuilder<DocumentSnapshot<Userinfo>>(
-                                    stream: Userinfo.getUserDocumentStream(entry.key),
+                            for(QueryDocumentSnapshot<Map<String, dynamic>> entry in data){
+                              if(!lastSeenIndicatorWidgetByUserId.containsKey(entry.id)){
+                                lastSeenIndicatorWidgetByUserId[entry.id] = StreamBuilder<DocumentSnapshot<Userinfo>>(
+                                    stream: Userinfo.getUserDocumentStream(entry.id),
                                     builder: (context, snapshot) {
                                       if(!snapshot.hasData || snapshot.hasError){
-                                        return Text("");
+                                        return const Text("");
                                       }
                                       Userinfo u = snapshot.data!.data()!;
 
@@ -140,10 +143,11 @@ class _ChatRoomState extends State<ChatRoom>{
                                       );
                                       return res;
                                     }
-                                  )
                                 );
                               }
-                            }
+                                widgets.add(lastSeenIndicatorWidgetByUserId[entry.id]!);
+                              }
+
                             return Row(
                               mainAxisAlignment: isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
                               children: widgets);
@@ -283,9 +287,34 @@ class _ChatRoomState extends State<ChatRoom>{
         {
           _totalMessages = value.docs.length
         });
+
+    discussionImageWidget = StreamBuilder<DocumentSnapshot<Discussion>>(
+        stream: Discussion.getDiscussionStream(widget.discussionId),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator(),);
+          }
+          Discussion disc = snapshot.data!.data()!;
+          return disc.getDiscussionCircleAvatar() ;
+        }
+    );
+    discussionTitleWidget = Expanded(child: Padding(
+        padding: const EdgeInsets.all(8),
+    child: StreamBuilder<DocumentSnapshot<Discussion>>(
+    stream: Discussion.getDiscussionStream(widget.discussionId),
+    builder: (context, snapshot) {
+    if (!snapshot.hasData) {
+    return const Text("Loading");
+    }
+    Discussion disc = snapshot.data!.data()!;
+    return disc.getTitleTextWidget() ;
+    }
+    )));
   }
 
 
+  Widget discussionImageWidget = const Center(child: CircularProgressIndicator(),);
+  Widget discussionTitleWidget = Expanded(child: Row(children: const [Center(child: CircularProgressIndicator()),],),);
 
   @override
   Widget build(BuildContext context) {
@@ -304,30 +333,8 @@ class _ChatRoomState extends State<ChatRoom>{
                 backgroundColor: ColorConstants.backgroundHighlight,
                 title: Row(
                   children: [
-                    // TODO changer ça pour plus avoir le petit freeze à chaque reload
-                    StreamBuilder<DocumentSnapshot<Discussion>>(
-                      stream: Discussion.getDiscussionStream(widget.discussionId),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData) {
-                          return const Center(child: CircularProgressIndicator(),);
-                        }
-                        Discussion disc = snapshot.data!.data()!;
-                        return disc.getDiscussionCircleAvatar() ;
-                      }
-                    ),
-                    Expanded(child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: StreamBuilder<DocumentSnapshot<Discussion>>(
-                          stream: Discussion.getDiscussionStream(widget.discussionId),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData) {
-                              return const Text("Loading");
-                            }
-                            Discussion disc = snapshot.data!.data()!;
-                            return disc.getTitleTextWidget() ;
-                          }
-                      ),
-                    )),
+                    discussionImageWidget,
+                    discussionTitleWidget,
                     IconButton(
                       icon: const Icon(Icons.settings),
                       onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ChatRoomParam(discussionId: widget.discussionId))),

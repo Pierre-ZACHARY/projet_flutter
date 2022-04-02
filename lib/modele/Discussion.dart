@@ -20,7 +20,6 @@ class Discussion {
   final String discussion_id;
   //final List<dynamic> messagesIds; // trié par plus récent : les messages en début de liste sont ceux qui viennent d'arriver
   final List<dynamic> usersIds;
-  final Map<dynamic, dynamic> lastMessageSeenByUsers;
   final int type; // 0 = discussion entre 2 utilisateurs, 1 = discussion de groupe
   final String? imgUrl; // image du groupe si type 1
   final String? groupTitle; // titre du groupe si type 1
@@ -30,14 +29,12 @@ class Discussion {
     required this.groupTitle ,
     required this.discussion_id,
     required this.type,
-    required this.lastMessageSeenByUsers,
     required this.usersIds
   });
   Discussion.fromJson(Map<String, Object?> json) : this(
       discussion_id: json['discussion_id']! as String,
       usersIds: json['usersIds']! as List<dynamic>,
       type: json['type']! as int,
-      lastMessageSeenByUsers: (json['lastMessageSeenByUsers'] ?? {}) as Map<dynamic, dynamic>,
       groupTitle: json['groupTitle'] as String?,
       imgUrl: json['imgUrl'] as String?,
   );
@@ -46,7 +43,6 @@ class Discussion {
       'discussion_id': discussion_id,
       'usersIds': usersIds,
       'type': type,
-      'lastMessageSeenByUsers': lastMessageSeenByUsers,
       'groupTitle': groupTitle,
       'imgUrl': imgUrl,
     };
@@ -89,18 +85,12 @@ class Discussion {
   }
 
   @action
-  void updateLastMessageSeenForCurrentUser(String messageId){
-    // TODO mettre ça dans une collection à part
-    DocumentReference<Discussion> ref = getDiscussionReference(discussion_id);
+  Future<void> updateLastMessageSeenForCurrentUser(String messageId) async {
     String userId = FirebaseAuth.instance.currentUser!.uid;
-    FirebaseFirestore.instance.runTransaction((transaction) async {
-      DocumentSnapshot<Discussion> freshSnap = await transaction.get(ref);
-      Map<dynamic, dynamic> localLastMessageSeenByUsers = freshSnap.data()!.lastMessageSeenByUsers;
-      localLastMessageSeenByUsers[userId] = messageId;
-      transaction.update(freshSnap.reference, {
-        'lastMessageSeenByUsers': localLastMessageSeenByUsers,
-      });
-    });
+    await getDiscussionReference(discussion_id).collection("lastMessageSeenByUsers").doc(userId).set(
+        {
+          'messageId': messageId,
+        });
   }
 
   Stream<QuerySnapshot<Message>> getLastMessageStream(){
@@ -311,7 +301,7 @@ class Discussion {
         type = 1;
       }
       discussion = Discussion(
-          discussion_id: discussionId, usersIds: usersIds, type: type, lastMessageSeenByUsers: {}, imgUrl: null, groupTitle: null);
+          discussion_id: discussionId, usersIds: usersIds, type: type, imgUrl: null, groupTitle: null);
       await FirebaseMessaging.instance.subscribeToTopic(discussionId);
       discussionRef.doc(discussionId).set(discussion.toJson())
           .then((value) => print("discussion open"))
