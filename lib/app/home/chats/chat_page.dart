@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:projet_flutter/app/home/chats/chat_room.dart';
@@ -30,6 +32,15 @@ class UserinfoWrapper{
 
 class _ChatPageState extends State<ChatPage>{
 
+
+  Map<String, bool> muteIcons = Map();
+
+  IconData getIcon(String id){
+    if (muteIcons[id] == true){
+      return Icons.volume_mute;
+    }
+    return Icons.volume_up;
+  }
 
   Widget _buildListItem(BuildContext context, String discussionId){
     Stream<DocumentSnapshot<Discussion>> discussionStream = Discussion.getDiscussionStream(discussionId);
@@ -85,18 +96,20 @@ class _ChatPageState extends State<ChatPage>{
                         return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                             stream: Discussion.getDiscussionReference(discussion.discussion_id).collection("lastMessageSeenByUsers").doc(userId).snapshots(),
                             builder: (context, snapshotLastSeen) {
-                              int unseennumber ;
+                              int unseennumber = 0;
                               if(!snapshotLastSeen.hasData){
                                 unseennumber = 0;
                               }
                               else{
-                                Map<String, dynamic> map = snapshotLastSeen.data!.data()!;
-                                String msgId = map["messageId"];
-                                unseennumber = snapshot.data!.docs.length;
-                                for(int i = 0; i<snapshot.data!.docs.length; i++){
-                                  if(snapshot.data!.docs[i].data().messageId == msgId){
-                                    unseennumber = i;
-                                    break;
+                                Map<String, dynamic> map = snapshotLastSeen.data!.data() ?? {};
+                                if (map.isNotEmpty){
+                                  String msgId = map["messageId"];
+                                  unseennumber = snapshot.data!.docs.length;
+                                  for(int i = 0; i<snapshot.data!.docs.length; i++){
+                                    if(snapshot.data!.docs[i].data().messageId == msgId){
+                                      unseennumber = i;
+                                      break;
+                                    }
                                   }
                                 }
                               }
@@ -130,6 +143,9 @@ class _ChatPageState extends State<ChatPage>{
                 onPressed: (context) async {
                   await discussion.isDiscussionMutedForCurrentUser().then((value) async {
                     final scaffold = ScaffoldMessenger.of(context);
+                    if (!muteIcons.containsKey(discussionId)){
+                      muteIcons[discussionId] = false;
+                    }
                     if (value) {
                       scaffold.showSnackBar(
                         SnackBar(
@@ -137,6 +153,7 @@ class _ChatPageState extends State<ChatPage>{
                           action: SnackBarAction(label: 'OK', onPressed: scaffold.hideCurrentSnackBar),
                         ),
                       );
+                      muteIcons[discussionId] = false;
                       await discussion.unmuteDiscussionForCurrentUser();
                     } else {
                       scaffold.showSnackBar(
@@ -145,13 +162,14 @@ class _ChatPageState extends State<ChatPage>{
                           action: SnackBarAction(label: 'OK', onPressed: scaffold.hideCurrentSnackBar),
                         ),
                       );
+                      muteIcons[discussionId] = true;
                       await discussion.muteDiscussionForCurrentUser();
                     }
                   });
                 },
                 backgroundColor: Colors.orange,
                 foregroundColor: Colors.white,
-                icon: Icons.volume_mute,
+                icon: getIcon(discussionId),
                 label: 'Mute',
               ),
               SlidableAction(
