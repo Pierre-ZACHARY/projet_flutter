@@ -73,7 +73,7 @@ class _ChatPageState extends State<ChatPage>{
                           stream: discussion.getLastMessageStream(),
                           builder: (context, snapshot) {
                             String content;
-                            if(!snapshot.hasData || snapshot.connectionState == ConnectionState.waiting){
+                            if(!snapshot.hasData || snapshot.connectionState == ConnectionState.waiting || snapshot.data!.docs.isEmpty){
                               content = "Loading...";
                             }
                             else{
