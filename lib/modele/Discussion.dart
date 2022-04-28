@@ -154,6 +154,47 @@ class Discussion {
 
   }
 
+  Widget getDiscussionCircleAvatarWithSize(double size){
+    //renvoi le titre de la discussion
+    if(usersIds.length == 2) {
+      // le cas où c'est une conversation entre 2 utilisateurs : on veut afficher le pseudo / l'image de l'autre utilisateur
+      String currentUid = FirebaseAuth.instance.currentUser!.uid;
+      String otherUid = usersIds[0] == currentUid ? usersIds[1] : usersIds[0];
+      Stream<DocumentSnapshot<Userinfo>> otherUserStream = Userinfo
+          .getUserDocumentStream(otherUid);
+
+      return StreamBuilder<DocumentSnapshot<Userinfo>>(
+          stream: otherUserStream,
+          builder: (context, snapshot)
+          {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Text("", style: TextConstants.titlePrimary);
+            }
+            if (snapshot.hasError || !snapshot.hasData ||
+                snapshot.data!.data() == null) {
+              return const Text('Something went wrong', style: TextConstants.titlePrimary);
+            }
+
+            Userinfo otherUserInfo = snapshot.data!.data()!;
+            return CircleAvatar(
+              backgroundColor: Colors.white,
+              backgroundImage: const AssetImage('assets/images/default-profile-picture.png'),
+              foregroundImage: otherUserInfo.imgUrl != "" ? NetworkImage(otherUserInfo.imgUrl) : null,
+              radius: size,
+            );
+          });
+    }
+    else{
+      return CircleAvatar(
+        backgroundColor: Colors.white,
+        backgroundImage: const AssetImage('assets/images/default-profile-picture.png'),
+        foregroundImage: imgUrl != null ? NetworkImage(imgUrl!) : null,
+        radius: size,
+      );
+    }
+
+  }
+
   Widget getTitleTextWidget(){
     //renvoi le titre de la discussion
 
@@ -216,7 +257,7 @@ class Discussion {
     }
   }
 
-  Future<void> changeImage(File imageFile) async{
+  Future<void> changeImage(String imgUrl) async{
     DocumentReference<Discussion> ref = getDiscussionReference(discussion_id);
     sendMessageFromCurrentUser("a modifié l'image du groupe", type: 3);
     FirebaseFirestore.instance.runTransaction((transaction) async {
