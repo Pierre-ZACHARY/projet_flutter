@@ -166,6 +166,7 @@ class _ChatRoomParamState extends State<ChatRoomParam>{
                             },
                             getSelectedValue: (UserinfoWrapper value) {
                               discussion.addUser(context, value.value.uid);
+                              addUserController.text = "";
                             }),
                       ),
                       Padding(
