@@ -6,7 +6,6 @@ import 'package:projet_flutter/modele/DiscussionsList.dart';
 import 'package:projet_flutter/modele/Message.dart';
 import 'package:projet_flutter/modele/UserInfo.dart';
 import 'package:projet_flutter/utils/constant.dart';
-import '/modele/Bandnames.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:textfield_search/textfield_search.dart';
@@ -31,13 +30,20 @@ class UserinfoWrapper{
 class _ChatPageState extends State<ChatPage>{
 
 
-  Map<String, bool> muteIcons = Map();
+  Map<String, bool> muteIcons = {};
+  Map<String, String> muteLabels = {};
 
   IconData getIcon(String id){
     if (muteIcons[id] == true){
-      return Icons.volume_mute;
+      return Icons.notifications_off;
     }
-    return Icons.volume_up;
+    return Icons.notifications_active;
+  }
+  String getLabel(String id){
+    if (muteIcons[id] == true){
+      return "Muted";
+    }
+    return "Active";
   }
 
   Widget _buildListItem(BuildContext context, String discussionId){
@@ -142,7 +148,7 @@ class _ChatPageState extends State<ChatPage>{
                   await discussion.isDiscussionMutedForCurrentUser().then((value) async {
                     final scaffold = ScaffoldMessenger.of(context);
                     if (!muteIcons.containsKey(discussionId)){
-                      muteIcons[discussionId] = false;
+                      muteIcons[discussionId] = value;
                     }
                     if (value) {
                       scaffold.showSnackBar(
@@ -151,7 +157,7 @@ class _ChatPageState extends State<ChatPage>{
                           action: SnackBarAction(label: 'OK', onPressed: scaffold.hideCurrentSnackBar),
                         ),
                       );
-                      muteIcons[discussionId] = false;
+                      muteIcons[discussionId] = !value;
                       await discussion.unmuteDiscussionForCurrentUser();
                     } else {
                       scaffold.showSnackBar(
@@ -160,7 +166,7 @@ class _ChatPageState extends State<ChatPage>{
                           action: SnackBarAction(label: 'OK', onPressed: scaffold.hideCurrentSnackBar),
                         ),
                       );
-                      muteIcons[discussionId] = true;
+                      muteIcons[discussionId] = !value;
                       await discussion.muteDiscussionForCurrentUser();
                     }
                   });
@@ -168,13 +174,13 @@ class _ChatPageState extends State<ChatPage>{
                 backgroundColor: Colors.orange,
                 foregroundColor: Colors.white,
                 icon: getIcon(discussionId),
-                label: 'Mute',
+                label: getLabel(discussionId),
               ),
               SlidableAction(
                 onPressed: (context) {
                   discussion.removeDiscussionFromCurrentUserList();
                 },
-                backgroundColor: Color(0xFFFE4A49),
+                backgroundColor: const Color(0xFFFE4A49),
                 foregroundColor: Colors.white,
                 icon: Icons.delete,
                 label: 'Delete',
@@ -195,7 +201,6 @@ class _ChatPageState extends State<ChatPage>{
     String _inputText = myController.text;
     Query<Userinfo> query = Userinfo.searchUser(_inputText);
     QuerySnapshot<Userinfo> querySnapshot = await query.limit(10).get();
-    print(querySnapshot.docs.length);
     for(int i = 0; i < querySnapshot.docs.length; i++){
       QueryDocumentSnapshot<Userinfo> documentSnapshot = querySnapshot.docs[i];
       Userinfo userinfo = documentSnapshot.data();
@@ -217,7 +222,7 @@ class _ChatPageState extends State<ChatPage>{
     return Scaffold(
         backgroundColor: ColorConstants.background,
         body: Padding(
-          padding: EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
           child: Column(
             children: [
               TextFieldSearch(
