@@ -148,7 +148,7 @@ class _ChatPageState extends State<ChatPage>{
                   await discussion.isDiscussionMutedForCurrentUser().then((value) async {
                     final scaffold = ScaffoldMessenger.of(context);
                     if (!muteIcons.containsKey(discussionId)){
-                      muteIcons[discussionId] = value;
+                      muteIcons[discussionId] = false;
                     }
                     if (value) {
                       scaffold.showSnackBar(
@@ -157,7 +157,7 @@ class _ChatPageState extends State<ChatPage>{
                           action: SnackBarAction(label: 'OK', onPressed: scaffold.hideCurrentSnackBar),
                         ),
                       );
-                      muteIcons[discussionId] = !value;
+                      muteIcons[discussionId] = false;
                       await discussion.unmuteDiscussionForCurrentUser();
                     } else {
                       scaffold.showSnackBar(
@@ -166,7 +166,7 @@ class _ChatPageState extends State<ChatPage>{
                           action: SnackBarAction(label: 'OK', onPressed: scaffold.hideCurrentSnackBar),
                         ),
                       );
-                      muteIcons[discussionId] = !value;
+                      muteIcons[discussionId] = true;
                       await discussion.muteDiscussionForCurrentUser();
                     }
                   });
